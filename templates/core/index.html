@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - App de Métodos Numéricos{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<header class="bg-indigo-600 text-white px-6 py-4">
+    <div class="container mx-auto flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold">App de Métodos Numéricos</h1>
+            <p class="text-indigo-100 text-sm">Instituto Mexicano del Transporte</p>
+        </div>
+        <div class="mt-2 md:mt-0">
+            <p class="text-indigo-100">Corte 2 - 2025</p>
+        </div>
+    </div>
+</header>
+
+<!-- Main content -->
+<main class="flex-grow container mx-auto px-4 py-8">
+    <div id="app"></div>
+</main>
+
+<!-- Footer -->
+<footer class="bg-gray-100 py-4 text-center text-gray-600">
+    <div class="container mx-auto">
+        <p>© 2025 Instituto Mexicano del Transporte</p>
+        <p class="text-sm mt-1">
+            <a href="https://github.com/" class="text-indigo-600 hover:underline">Repositorio GitHub</a>
+            &bull;
+            <a href="#" class="text-indigo-600 hover:underline">Licencia IMT</a>
+        </p>
+    </div>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Componente ModuleCard para cada módulo de la aplicación
+    function ModuleCard(props) {
+        return html`
+            <div class=${`bg-white shadow rounded-lg p-6 flex flex-col h-full
+                       ${props.disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-lg transition-shadow'}`}>
+                <h2 class="text-xl font-semibold mb-2 text-gray-800">${props.title}</h2>
+                <p class="flex-grow text-gray-600 mb-4">${props.description}</p>
+                <button
+                    onClick=${() => !props.disabled && (window.location.href = props.url)}
+                    class=${`mt-auto py-2 px-4 rounded-md font-medium w-full
+                           ${props.disabled
+                              ? 'bg-gray-300 text-gray-500'
+                              : 'bg-indigo-500 text-white hover:bg-indigo-600 transition-colors'}`}
+                    aria-label=${`Ir a ${props.title}`}
+                    disabled=${props.disabled}
+                >
+                    ${props.disabled ? 'Próximamente' : 'Acceder'}
+                </button>
+            </div>
+        `;
+    }
+
+    // Componente principal de la página de inicio
+    function MenuApp() {
+        // Lista de módulos disponibles según especificaciones
+        const modules = [
+            {
+                title: "Sistemas de Ecuaciones Lineales",
+                description: "Gauss · LU · Jacobi · Gauss-Seidel",
+                url: "/sistemas/",
+                disabled: false
+            },
+            {
+                title: "Interpolación y Ajuste de Curvas",
+                description: "Lagrange · Newton · Regresión lineal",
+                url: "/interpolacion/",
+                disabled: false
+            },
+            {
+                title: "Historial de Operaciones",
+                description: "Ver tus ejercicios resueltos",
+                url: "/historial/",
+                disabled: false
+            },
+            {
+                title: "Diferenciación e Integración",
+                description: "Trapecio · Simpson · Diferencias centradas",
+                url: "#",
+                disabled: true
+            },
+            {
+                title: "EDO: Euler y RK4",
+                description: "Euler · RK4 · tablas y gráficas",
+                url: "#",
+                disabled: true
+            }
+        ];
+
+        return html`
+            <div>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">Selecciona un módulo</h2>
+                <div class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                    ${modules.map(module => html`
+                        <${ModuleCard} 
+                            title=${module.title}
+                            description=${module.description}
+                            url=${module.url}
+                            disabled=${module.disabled}
+                        />
+                    `)}
+                </div>
+            </div>
+        `;
+    }
+
+    // Renderizar la aplicación en el contenedor
+    render(html`<${MenuApp} />`, document.getElementById('app'));
+</script>
+{% endblock %} 

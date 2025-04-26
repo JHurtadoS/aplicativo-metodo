@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}App de Métodos Numéricos{% endblock %}</title>
+    
+    <!-- Tailwind CSS via CDN (modo play para desarrollo) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Preact via CDN (sin build tools) -->
+    <script src="https://unpkg.com/preact@10/dist/preact.min.js"></script>
+    <script src="https://unpkg.com/preact@10/hooks/dist/hooks.umd.js"></script>
+    <script src="https://unpkg.com/htm@3/dist/htm.js"></script>
+    
+    <script>
+        // Configuración para usar Preact con htm (JSX-like syntax sin build tools)
+        window.h = preact.h;
+        window.html = htm.bind(preact.h);
+        window.render = preact.render;
+        window.useState = preactHooks.useState;
+        window.useEffect = preactHooks.useEffect;
+    </script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    {% block content %}{% endblock %}
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html> 
