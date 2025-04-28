@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Interpolación y Ajuste de Curvas{% endblock %}
+
+{% block extra_head %}
+<style>
+  .container { display: flex; width: 100%; padding: 1rem; }
+  .left-panel { flex: 1; margin-right: 1rem; border: 1px solid #ccc; padding: 1rem; }
+  .right-panel { flex: 2; border: 1px solid #ccc; padding: 1rem; }
+  textarea, select, input { width: 100%; margin-bottom: 0.5rem; }
+  button { padding: 0.5rem 1rem; cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="app"></div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  const html = window.html;
+  const render = window.render;
+  const useState = window.useState;
+
+  function MethodSelector({ method, onChange }) {
+    return html`
+      <div>
+        <label>Método:</label>
+        <select value=${method} onChange=${e => onChange(e.target.value)}>
+          <option value="Lagrange">Lagrange</option>
+          <option value="Newton">Newton</option>
+          <option value="Regresion">Regresión lineal</option>
+        </select>
+      </div>
+    `;
+  }
+
+  function PointsInput({ value, onChange }) {
+    return html`
+      <div>
+        <label>Puntos (x,y):</label>
+        <textarea rows="5" placeholder="1,2\n2,5\n3,10" value=${value} onInput=${e => onChange(e.target.value)}></textarea>
+      </div>
+    `;
+  }
+
+  function App() {
+    const [method, setMethod] = useState('Lagrange');
+    const [points, setPoints] = useState('');
+    return html`
+      <div class="container">
+        <div class="left-panel">
+          <${MethodSelector} method=${method} onChange=${setMethod} />
+          <${PointsInput} value=${points} onChange=${setPoints} />
+          <button onClick=${() => {/* TODO: enviar datos al backend */}}>Resolver</button>
+        </div>
+        <div class="right-panel">
+          <!-- Aquí se mostrarán resultados de interpolación -->
+        </div>
+      </div>
+    `;
+  }
+
+  render(html`<${App} />`, document.getElementById('app'));
+</script>
+{% endblock %} 

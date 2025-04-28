@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ejemplos de Librerías Visuales{% endblock %}
+
+{% block extra_head %}
+  <!-- Incluir CDNs de herramientas visuales -->
+  {% include "core/visual_tools_head.html" %}
+  <!-- Cargar módulo de utilidades visuales -->
+  <script type="module" src="{% static 'js/visual_tools.js' %}"></script>
+  <style>
+    .example-container { display: flex; flex-direction: column; gap: 1.5rem; max-width: 800px; margin: auto; padding: 1rem; }
+    .example-section { border: 1px solid #ddd; padding: 1rem; border-radius: 4px; }
+    .example-section h3 { margin-bottom: 0.5rem; }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="example-container">
+    <div class="example-section">
+      <h3>Ejemplo: Gráfica de Error (Chart.js)</h3>
+      <canvas id="exampleChart" width="400" height="200"></canvas>
+    </div>
+
+    <div class="example-section">
+      <h3>Ejemplo: Fórmula en LaTeX (KaTeX)</h3>
+      <div id="exampleFormula"></div>
+    </div>
+
+    <div class="example-section">
+      <h3>Ejemplo: Tabla de Pasos (Tabulator)</h3>
+      <div id="exampleTable"></div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  import { initChart, renderFormula, initTable } from "{% static 'js/visual_tools.js' %}";
+
+  // Gráfico de error mock
+  const errors = [1, 0.8, 0.6, 0.4, 0.2, 0.1];
+  initChart('exampleChart', {
+    labels: errors.map((_, i) => `Iter ${i+1}`),
+    datasets: [{ label: 'Error', data: errors, borderColor: 'rgb(54, 162, 235)' }]
+  }, { type: 'line' });
+
+  // Fórmula de ejemplo
+  const formulaLatex = '\\begin{bmatrix} a & b \\\\ c & d \end{bmatrix}';
+  renderFormula('exampleFormula', formulaLatex);
+
+  // Tabla de pasos de ejemplo
+  const stepsData = [
+    { paso: 'Inicio', detalle: 'Matriz original' },
+    { paso: 'Paso 1', detalle: 'Aplicar pivoteo' },
+    { paso: 'Paso 2', detalle: 'Sustitución regresiva' }
+  ];
+  const cols = [
+    { title: 'Paso', field: 'paso' },
+    { title: 'Detalle', field: 'detalle' }
+  ];
+  initTable('exampleTable', stepsData, cols);
+</script>
+{% endblock %} 

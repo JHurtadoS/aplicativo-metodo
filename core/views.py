@@ -15,3 +15,9 @@ def historial(request):
     # Obtener historial de la sesión (o lista vacía si no existe)
     historial = request.session.get('historial', [])
     return render(request, 'core/historial.html', {'historial': historial})
+
+def ejemplos(request):
+    """
+    Página de ejemplos y pruebas de librerías visuales
+    """
+    return render(request, 'core/ejemplos.html')

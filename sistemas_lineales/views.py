@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 
 def index(request):
     """
-    Vista provisional para sistemas lineales
+    Vista para el módulo de sistemas de ecuaciones lineales
     """
-    # Por ahora solo mostramos un mensaje
-    return render(request, 'core/index.html')  # Redirigir a la página principal por ahora
+    # Renderizar el formulario inicial para sistemas lineales
+    return render(request, 'sistemas_lineales/form.html')

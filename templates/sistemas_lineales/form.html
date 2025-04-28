@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Sistemas de Ecuaciones Lineales{% endblock %}
+
+{% block extra_head %}
+<style>
+  .container { display: flex; width: 100%; padding: 1rem; }
+  .left-panel { flex: 1; margin-right: 1rem; border: 1px solid #ccc; padding: 1rem; }
+  .right-panel { flex: 2; border: 1px solid #ccc; padding: 1rem; }
+  textarea, select, input { width: 100%; margin-bottom: 0.5rem; }
+  button { padding: 0.5rem 1rem; cursor: pointer; }
+</style>
+{% include "core/visual_tools_head.html" %}
+<script type="module" src="{% static 'js/visual_tools.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div id="app"></div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  import { ResultsPanel, initChart, renderFormula, initTable } from "{% static 'js/visual_tools.js' %}";
+  const { useEffect } = window;
+
+  const html = window.html;
+  const render = window.render;
+  const useState = window.useState;
+
+  function MethodSelector({ method, onChange }) {
+    return html`
+      <div>
+        <label>Método:</label>
+        <select value=${method} onChange=${e => onChange(e.target.value)}>
+          <option value="Gauss">Gauss</option>
+          <option value="LU">LU</option>
+          <option value="Jacobi">Jacobi</option>
+          <option value="Gauss-Seidel">Gauss-Seidel</option>
+        </select>
+      </div>
+    `;
+  }
+
+  function MatrixInput({ value, onChange }) {
+    return html`
+      <div>
+        <label>Matriz aumentada:</label>
+        <textarea rows="5" placeholder="2 1 -1 | 8\n-3 -1 2 | -11\n-2 1 2 | -3" value=${value} onInput=${e => onChange(e.target.value)}></textarea>
+      </div>
+    `;
+  }
+
+  function Parameters({ method, tol, maxIter, onTolChange, onMaxIterChange }) {
+    if (method === 'Jacobi' || method === 'Gauss-Seidel') {
+      return html`
+        <div>
+          <label>Tolerancia:</label>
+          <input type="number" step="any" placeholder="1e-6" value=${tol} onInput=${e => onTolChange(e.target.value)} />
+          <label>Iteraciones máx.:</label>
+          <input type="number" placeholder="100" value=${maxIter} onInput=${e => onMaxIterChange(e.target.value)} />
+        </div>
+      `;
+    }
+    return null;
+  }
+
+  function App() {
+    const [method, setMethod] = useState('Gauss');
+    const [matrix, setMatrix] = useState('');
+    const [tol, setTol] = useState('');
+    const [maxIter, setMaxIter] = useState('');
+    
+    // Ejemplo de inicialización con datos mock
+    useEffect(() => {
+      // Mock de errores de iteración
+      const mockErrors = [1, 0.5, 0.25, 0.125, 0.06];
+      initChart('errorChart', {
+        labels: mockErrors.map((_, i) => `Iter ${i+1}`),
+        datasets: [{ label: 'Error', data: mockErrors, borderColor: 'rgb(75, 192, 192)' }]
+      }, { type: 'line' });
+
+      // Mock de fórmula en LaTeX - corregido según la documentación
+      const mockLatex = 'x = \\begin{bmatrix} 1 \\\\ 2 \\\\ 3 \\end{bmatrix}';
+      renderFormula('formulaOutput', mockLatex);
+
+      // Mock de pasos en tabla
+      const mockSteps = [
+        { step: 'Matriz inicial', matriz: '\\begin{bmatrix} 2 & 1 & -1 \\\\ -3 & -1 & 2 \\\\ -2 & 1 & 2 \\end{bmatrix}' },
+        { step: 'Despejar x1', ecuacion: 'x_1 = \\frac{8 - 1x_2 + 1x_3}{2}' },
+        { step: 'Substituir x1 en ecuación 2', resultado: 'x_2 = 1.25' }
+      ];
+      const columns = [
+        { title: 'Paso', field: 'step' }
+      ];
+      initTable('stepsTable', mockSteps, columns);
+    }, []);
+
+    return html`
+      <div class="container">
+        <div class="left-panel">
+          <${MethodSelector} method=${method} onChange=${setMethod} />
+          <${MatrixInput} value=${matrix} onChange=${setMatrix} />
+          <${Parameters} method=${method} tol=${tol} maxIter=${maxIter} onTolChange=${setTol} onMaxIterChange=${setMaxIter} />
+          <button onClick=${() => {/* TODO: enviar datos al backend */}}>Resolver</button>
+        </div>
+        <${ResultsPanel} canvasId="errorChart" formulaId="formulaOutput" tableId="stepsTable" />
+      </div>
+    `;
+  }
+
+  render(html`<${App} />`, document.getElementById('app'));
+</script>
+{% endblock %} 

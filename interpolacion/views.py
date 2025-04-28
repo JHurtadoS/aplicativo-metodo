@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 
 def index(request):
     """
-    Vista provisional para interpolacion
+    Vista para el módulo de interpolación y ajuste de curvas
     """
-    # Por ahora solo mostramos un mensaje
-    return render(request, 'core/index.html')  # Redirigir a la página principal por ahora
+    # Renderizar el formulario inicial para interpolación
+    return render(request, 'interpolacion/form.html')
