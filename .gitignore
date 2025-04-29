@@ -1,0 +1,54 @@
+# Operating System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+
+# Node.js dependencies
+node_modules/
+
+# Production builds
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage directories
+coverage/
+coverage.json
+*.lcov
+.nyc_output/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporary files and caches
+tmp/
+temp/
+.cache/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.user
+*.swp
+
+# Python artifacts (if any)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+ENV/
+
+# Miscellaneous
+*.tgz
+*.zip
+*.tar.gz

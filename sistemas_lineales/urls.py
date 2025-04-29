@@ -1,7 +1,9 @@
 from django.urls import path
 from . import views
 
+app_name = 'sistemas_lineales'
+
 urlpatterns = [
-    # Temporalmente, redirigimos a una vista placeholder
-    path('', views.index, name='sistemas_index'),
+    path('', views.sistema_lineal_solver_view, name='solver'),
+    # Add other URLs for this app if needed
 ] 

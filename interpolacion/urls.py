@@ -1,7 +1,9 @@
 from django.urls import path
 from . import views
 
+app_name = 'interpolacion'
+
 urlpatterns = [
-    # Temporalmente, redirigimos a una vista placeholder
-    path('', views.index, name='interpolacion_index'),
+    path('', views.interpolacion_view, name='interpolacion_form'),
+    # Add other URLs for this app if needed
 ] 

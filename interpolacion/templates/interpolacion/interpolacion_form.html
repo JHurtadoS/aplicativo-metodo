@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Interpolación y Ajuste de Curvas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Interpolación y Ajuste de Curvas</h1>
+
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.points.id_for_label }}">
+                    {{ form.points.label }}
+                </label>
+                {{ form.points }}
+                {% if form.points.help_text %}
+                    <p class="text-gray-600 text-xs italic">{{ form.points.help_text }}</p>
+                {% endif %}
+                {% if form.points.errors %}
+                    <p class="text-red-500 text-xs italic">{{ form.points.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                    {{ form.method.label }}
+                </label>
+                {% for radio in form.method %}
+                    <div class="flex items-center mb-2">
+                        {{ radio.tag }}
+                        <label for="{{ radio.id_for_label }}" class="ml-2 text-sm text-gray-700">{{ radio.choice_label }}</label>
+                    </div>
+                {% endfor %}
+                 {% if form.method.errors %}
+                    <p class="text-red-500 text-xs italic">{{ form.method.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    {{ form.non_field_errors|first }}
+                </div>
+            {% endif %}
+
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    Calcular
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {% if error_message %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <strong class="font-bold">Error:</strong>
+            <span class="block sm:inline">{{ error_message }}</span>
+        </div>
+    {% endif %}
+
+    {% if results %}
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-6">
+            <h2 class="text-2xl font-bold mb-4">Resultados - {{ results.method }}</h2>
+
+            {% if results.error %}
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <strong class="font-bold">Error en el Cálculo:</strong>
+                    <span class="block sm:inline">{{ results.error }}</span>
+                </div>
+            {% else %}
+                {% if theory %}
+                <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                    <h3 class="text-lg font-semibold mb-2">Explicación Teórica</h3>
+                    <p class="text-sm">{{ theory|safe }}</p>
+                 </div>
+                 {% endif %}
+
+                 <div class="mb-4">
+                     <h3 class="text-lg font-semibold mb-2">Ecuación Resultante</h3>
+                     <div class="p-3 bg-gray-100 rounded overflow-x-auto">
+                         <code class="text-sm">
+                             {% if results.polynomial_latex %}
+                             $P(x) = {{ results.polynomial_latex }}$
+                             {% elif results.line_latex %}
+                             $y = {{ results.line_latex }}$
+                             {% else %}
+                             No disponible.
+                             {% endif %}
+                         </code>
+                     </div>
+                 </div>
+
+                {% if results.r_squared is not None %}
+                 <div class="mb-4">
+                     <h3 class="text-lg font-semibold mb-2">Calidad del Ajuste (Regresión)</h3>
+                     <p>Coeficiente de Determinación (R²): <strong>{{ results.r_squared|floatformat:4 }}</strong></p>
+                 </div>
+                 {% endif %}
+
+                 {% if results.plot_path %}
+                 <div class="mb-4">
+                     <h3 class="text-lg font-semibold mb-2">Gráfica</h3>
+                     <img src="{% static results.plot_path %}" alt="Gráfica de {{ results.method }}" class="mx-auto border rounded">
+                 </div>
+                 {% endif %}
+
+                 <div class="mb-4">
+                     <h3 class="text-lg font-semibold mb-2">Pasos del Cálculo</h3>
+                     <div class="prose prose-sm max-w-none p-4 border rounded bg-gray-50 overflow-x-auto">
+                         {% for step in results.steps %}
+                            <p>{{ step|safe }}</p> {# Use safe filter if steps contain HTML/Markdown #}
+                            {# Or render markdown properly if using a library #}
+                         {% endfor %}
+                    </div>
+                 </div>
+
+                {# Add Export Buttons Here if needed #}
+
+             {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+
+{# Include MathJax for LaTeX rendering #}
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}
+  });
+</script>
+
+{% endblock %} 

@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
     path('sistemas/', include('sistemas_lineales.urls')),
-    path('interpolacion/', include('interpolacion.urls')),
+    path('interpolacion/', include('interpolacion.urls', namespace='interpolacion')),
 ]
 
 # Añadir configuración para servir archivos estáticos en desarrollo

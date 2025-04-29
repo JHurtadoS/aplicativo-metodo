@@ -1,0 +1,773 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sistemas de Ecuaciones Lineales{% endblock %}
+
+{% block extra_head %}
+{# --- KaTeX Includes (Integrity removed for compatibility) --- #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+
+{# --- Include Tabulator and other visual tools --- #}
+{% include "core/visual_tools_head.html" %}
+
+<style>
+    /* Additional styles for mathematical expressions */
+    .calculation-steps {
+        line-height: 1.7;
+    }
+    .calculation-steps .step-item {
+        margin-bottom: 0.75rem;
+        padding-left: 0.25rem;
+    }
+    .katex-display {
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.5rem 0;
+    }
+    .katex {
+        font-size: 1.1em;
+    }
+    /* Make sure the matrix brackets are visible */
+    .katex .delimsizing.mult .delim-size1 > .vlist-t,
+    .katex .delimsizing.mult .delim-size2 > .vlist-t,
+    .katex .delimsizing.mult .delim-size3 > .vlist-t,
+    .katex .delimsizing.mult .delim-size4 > .vlist-t {
+        min-height: 1.4em;
+    }
+    /* Better styling for inline math */
+    .step-item {
+        overflow-x: auto;
+    }
+    .step-item .katex {
+        white-space: nowrap;
+    }
+    /* Enhance matrix and fraction display */
+    .katex-html .mfrac {
+        min-width: 0.6em;
+    }
+    .katex-html .mord.mtable {
+        min-width: 5em;
+    }
+    /* Ensure proper spacing between operators */
+    .katex .mbin {
+        margin: 0 0.1em;
+    }
+    .katex .mrel {
+        margin: 0 0.1em;
+    }
+    
+    /* Specific styles for LU decomposition */
+    .calculation-formula .katex-html .msubsup {
+        text-align: right;
+    }
+    .katex .mord.mathnormal {
+        font-style: normal;
+    }
+    .katex .msupsub {
+        text-align: center;
+    }
+    
+    /* Fix matrix display */
+    .katex-display > .katex > .katex-html {
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    
+    /* Fix subscripts and superscripts */
+    .katex .msupsub .msubsup {
+        margin-right: 0.1em;
+    }
+    
+    /* Make the font a bit larger for formula display */
+    .step-item {
+        font-size: 16px;
+    }
+    
+    /* High contrast colors for matrix elements */
+    .katex .mord.mathnormal.L {
+        color: #0066cc;
+    }
+    .katex .mord.mathnormal.U {
+        color: #cc0000;
+    }
+    .katex .mord.mathnormal.A {
+        color: #006600;
+    }
+    
+    /* Estilos para Tabulator */
+    .tabulator {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        margin-bottom: 1rem;
+        border-radius: 0.375rem;
+        overflow: hidden;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+    .tabulator-header {
+        background-color: #f1f5f9;
+        font-weight: 600;
+    }
+    .tabulator-row {
+        transition: background-color 0.2s;
+    }
+    .tabulator-row:nth-child(even) {
+        background-color: #f8fafc;
+    }
+    .tabulator-row:hover {
+        background-color: #e2e8f0;
+    }
+    .tabulator-cell {
+        padding: 8px 12px;
+        border-right: 1px solid #e2e8f0;
+    }
+    .tabulator-col-title {
+        font-weight: 600;
+    }
+    /* Columna k más compacta */
+    .tabulator [tabulator-field="k"] {
+        text-align: center;
+        width: 60px;
+    }
+    /* Formato para valores numéricos */
+    .tabulator-row .tabulator-cell[tabulator-field^="x_"] {
+        text-align: right;
+    }
+    .tabulator-row .tabulator-cell[tabulator-field="error"] {
+        text-align: right;
+        font-family: monospace;
+    }
+    /* Controles de paginación */
+    .tabulator-footer {
+        background-color: #f1f5f9;
+        font-size: 0.875rem;
+    }
+    .tabulator-paginator {
+        font-weight: 500;
+    }
+    .tabulator-page {
+        margin: 0 2px;
+        padding: 4px 8px;
+        border-radius: 0.25rem;
+        background-color: #e2e8f0;
+    }
+    .tabulator-page.active {
+        background-color: #4b5563;
+        color: white;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Basic configuration for KaTeX rendering
+        const katexOptions = {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ],
+            throwOnError: false,
+            strict: false,
+            trust: true,
+            output: 'html'
+        };
+            
+        // Wait for KaTeX resources to load
+        setTimeout(() => {
+            try {
+                // Render all math elements
+                renderMathInElement(document.body, katexOptions);
+                console.log("Initial KaTeX rendering completed");
+                
+                // Do a second pass on calculation steps
+                setTimeout(() => {
+                    const stepItems = document.querySelectorAll('.step-item');
+                    if (stepItems.length > 0) {
+                        stepItems.forEach(el => {
+                            if (el.innerHTML.includes('$')) {
+                                renderMathInElement(el, katexOptions);
+                            }
+                        });
+                        console.log(`Second pass rendering on ${stepItems.length} elements completed`);
+                    }
+                }, 300);
+            } catch (error) {
+                console.error("KaTeX rendering error:", error);
+            }
+        }, 300);
+    });
+</script>
+{% endblock %}
+
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Resolver Sistemas de Ecuaciones Lineales</h1>
+
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <form method="post" id="solver-form">
+            {% csrf_token %}
+            {{ form.matrix_data }} {# Hidden field #}
+            {{ form.vector_data }} {# Hidden field #}
+
+            {# Matrix Size Input #}
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.n_size.id_for_label }}">
+                    {{ form.n_size.label }}
+                </label>
+                {{ form.n_size }}
+                {% if form.n_size.errors %}
+                    <p class="text-red-500 text-xs italic">{{ form.n_size.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            {# Placeholder for Dynamic Matrix Grid #}
+            <div class="mb-4">
+                 <label class="block text-gray-700 text-sm font-bold mb-2">Matriz A y Vector b</label>
+                 <div id="matrix-grid-container" class="p-4 border rounded bg-gray-50">
+                    {# JavaScript will populate this #}
+                    <p class="text-gray-500 text-sm italic">Ajuste el tamaño para generar la cuadrícula de entrada...</p>
+                 </div>
+                 {# Show errors related to hidden fields if they exist #}
+                 {% if form.matrix_data.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ form.matrix_data.errors|first }}</p>
+                 {% endif %}
+                 {% if form.vector_data.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ form.vector_data.errors|first }}</p>
+                 {% endif %}
+            </div>
+
+
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                    {{ form.method.label }}
+                </label>
+                {% for radio in form.method %}
+                    <div class="flex items-center mb-2">
+                        {{ radio.tag }}
+                        <label for="{{ radio.id_for_label }}" class="ml-2 text-sm text-gray-700">{{ radio.choice_label }}</label>
+                    </div>
+                {% endfor %}
+                 {% if form.method.errors %}
+                    <p class="text-red-500 text-xs italic">{{ form.method.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            {# Iterative Method Fields - Show/Hide with JS #}
+            <div id="iterative-fields" class="mb-4 border-t pt-4 mt-4" style="display: none;">
+                 <h3 class="text-lg font-semibold mb-3">Parámetros para Métodos Iterativos</h3>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.initial_guess.id_for_label }}">
+                            {{ form.initial_guess.label }}
+                        </label>
+                        {{ form.initial_guess }}
+                        {% if form.initial_guess.help_text %}
+                            <p class="text-gray-600 text-xs italic">{{ form.initial_guess.help_text }}</p>
+                        {% endif %}
+                        {% if form.initial_guess.errors %}
+                            <p class="text-red-500 text-xs italic">{{ form.initial_guess.errors|first }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.tolerance.id_for_label }}">
+                            {{ form.tolerance.label }}
+                        </label>
+                        {{ form.tolerance }}
+                        {% if form.tolerance.errors %}
+                            <p class="text-red-500 text-xs italic">{{ form.tolerance.errors|first }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.max_iterations.id_for_label }}">
+                            {{ form.max_iterations.label }}
+                        </label>
+                        {{ form.max_iterations }}
+                        {% if form.max_iterations.errors %}
+                            <p class="text-red-500 text-xs italic">{{ form.max_iterations.errors|first }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {# Display ALL non-field errors #}
+            {% if form.non_field_errors %}
+                <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                     {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    Resolver Sistema
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {# General error message from the view context #}
+    {% if error_message %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <strong class="font-bold">Error General:</strong>
+            <span class="block sm:inline">{{ error_message }}</span>
+        </div>
+    {% endif %}
+
+    {% if results %}
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-6">
+            <h2 class="text-2xl font-bold mb-4">Resultados - {{ results.method }}</h2>
+
+            {% if results.error %}
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <strong class="font-bold">Error en el Cálculo:</strong>
+                    <span class="block sm:inline">{{ results.error }}</span>
+                </div>
+            {% endif %}
+
+            {% if theory %}
+            <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                <h3 class="text-lg font-semibold mb-2">Explicación Teórica</h3>
+                <p class="text-sm">{{ theory|safe }}</p>
+                </div>
+            {% endif %}
+
+            {# Display L and U matrices for LU method #}
+            {% if results.method == 'Descomposición LU (Doolittle)' and not results.error %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Matrices L y U</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3 bg-gray-100 rounded overflow-x-auto">
+                            <p class="font-mono text-sm mb-1">L =</p>
+                            {# Directly render the LaTeX string #}
+                            {% if results.L_latex %} 
+                                <div class="katex-display">$${{ results.L_latex }}$$</div>
+                            {% else %}N/A{% endif %}
+                        </div>
+                        <div class="p-3 bg-gray-100 rounded overflow-x-auto">
+                            <p class="font-mono text-sm mb-1">U =</p>
+                            {# Directly render the LaTeX string #}
+                            {% if results.U_latex %} 
+                                <div class="katex-display">$${{ results.U_latex }}$$</div>
+                            {% else %}N/A{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                     <h3 class="text-lg font-semibold mb-2">Vector Intermedio y</h3>
+                     <div class="p-3 bg-gray-100 rounded overflow-x-auto">
+                         <code class="text-sm">y = {{ results.y_vector }}</code>
+                     </div>
+                 </div>
+            {% endif %}
+
+            {% if results.solution %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Solución Encontrada</h3>
+                    <div class="p-3 bg-gray-100 rounded overflow-x-auto">
+                        <code class="text-sm">x = {{ results.solution }}</code>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if results.iterations is not None %}
+                 <div class="mb-4">
+                     <h3 class="text-lg font-semibold mb-2">Convergencia (Métodos Iterativos)</h3>
+                     <p>Iteraciones realizadas: <strong>{{ results.iterations }}</strong></p>
+                     <p>Error final: <strong>{{ results.final_error|floatformat:"-10"|default:"N/A" }}</strong></p>
+                     {% if results.converged is not None %}
+                         <p>Estado: {% if results.converged %}<span class="text-green-600 font-semibold">Convergió</span>{% else %}<span class="text-red-600 font-semibold">No convergió (máx iter)</span>{% endif %}</p>
+                     {% endif %}
+                     
+                     {% if results.iterations %}
+                     <div class="mt-4 overflow-x-auto">
+                         <h4 class="text-md font-medium mb-2">Vector de resultados por iteración:</h4>
+                         <table class="min-w-full bg-white border border-gray-300 shadow-sm rounded-lg overflow-hidden">
+                             <thead class="bg-gray-100">
+                                 <tr>
+                                     <th class="py-2 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-b">Iteración</th>
+                                     <th class="py-2 px-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider border-b">Vector Resultado</th>
+                                 </tr>
+                             </thead>
+                             <tbody class="divide-y divide-gray-200">
+                                 {% for vector in results.iterations %}
+                                 <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                                     <td class="py-2 px-3 text-sm text-gray-700 font-medium border-r">{{ forloop.counter }}</td>
+                                     <td class="py-2 px-3 text-sm text-gray-700">
+                                         <div class="font-mono flex flex-wrap items-center">
+                                             <span class="mr-1">[</span>
+                                             {% for value in vector %}
+                                             <span class="mx-1 py-1 px-2 {% if value < 0 %}text-red-600{% else %}text-blue-600{% endif %} rounded {% cycle 'bg-gray-100' 'bg-white' %}">{{ value|floatformat:"-3" }}</span>
+                                             {% if not forloop.last %}<span class="text-gray-400">,</span>{% endif %}
+                                             {% endfor %}
+                                             <span class="ml-1">]</span>
+                                         </div>
+                                     </td>
+                                 </tr>
+                                 {% endfor %}
+                             </tbody>
+                         </table>
+                     </div>
+                     {% endif %}
+                 </div>
+            {% endif %}
+
+            {% if results.iterations_table_data %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Tabla de Iteraciones</h3>
+                    <div id="iterations-table" class="w-full"></div>
+                </div>
+                
+                <script type="text/javascript">
+                    document.addEventListener("DOMContentLoaded", function() {
+                        try {
+                            // Depuración para ver si llegan datos
+                            console.log("Inicializando tabla Tabulator");
+                            
+                            // Los datos ya vienen pre-serializados como JSON string
+                            const rawData = '{{ results.iterations_table_data|safe }}';
+                            console.log("Datos raw:", rawData);
+                            
+                            // Verificar si rawData es un string JSON válido
+                            let iterationData;
+                            try {
+                                iterationData = JSON.parse(rawData);
+                            } catch(e) {
+                                console.error("Error al parsear JSON:", e);
+                                // Plan B: Creamos una tabla básica con los datos visibles en el texto
+                                iterationData = createTableFromText();
+                            }
+                            
+                            // Si no hay datos, creamos una tabla básica
+                            if (!iterationData || !Array.isArray(iterationData) || iterationData.length === 0) {
+                                console.warn("No hay datos de iteración válidos, usando alternativa");
+                                iterationData = createTableFromText();
+                            }
+                            
+                            console.log("Datos de iteración procesados:", iterationData);
+                            
+                            // Crear un array de definiciones de columnas dinámicamente
+                            const columns = [
+                                {
+                                    title: "k", 
+                                    field: "k", 
+                                    headerSort: false, 
+                                    width: 60,
+                                    hozAlign: "center",
+                                    headerHozAlign: "center",
+                                    cssClass: "font-semibold"
+                                }
+                            ];
+                            
+                            // Determinar cuántas variables x hay (x_1, x_2, ...)
+                            if (iterationData.length > 0) {
+                                const firstRow = iterationData[0];
+                                Object.keys(firstRow).forEach(key => {
+                                    if (key.startsWith("x_")) {
+                                        columns.push({
+                                            title: key,
+                                            field: key,
+                                            headerSort: false,
+                                            hozAlign: "right",
+                                            headerHozAlign: "center",
+                                            formatter: "number",
+                                            formatterParams: {
+                                                precision: 6
+                                            }
+                                        });
+                                    }
+                                });
+                                
+                                // Añadir columna de error al final
+                                columns.push({
+                                    title: "Error",
+                                    field: "error",
+                                    headerSort: false,
+                                    hozAlign: "right",
+                                    headerHozAlign: "center",
+                                    cssClass: "font-mono",
+                                    formatter: function(cell) {
+                                        const value = cell.getValue();
+                                        if (value === null || value === undefined) return "---";
+                                        return typeof value === 'number' ? value.toExponential(6) : value;
+                                    },
+                                    cellClick: function(e, cell) {
+                                        // Al hacer clic en una celda de error, mostrar el valor con más precisión
+                                        const value = cell.getValue();
+                                        if (value !== null && value !== undefined) {
+                                            alert("Error exacto: " + value);
+                                        }
+                                    }
+                                });
+                            }
+                            
+                            console.log("Configuración de columnas", columns);
+                            
+                            // Inicializar Tabulator con opciones mejoradas
+                            const table = new Tabulator("#iterations-table", {
+                                data: iterationData,
+                                layout: "fitColumns",
+                                columns: columns,
+                                height: "auto",
+                                maxHeight: "500px",
+                                responsiveLayout: "collapse",
+                                pagination: iterationData.length > 10 ? "local" : false,
+                                paginationSize: 10,
+                                paginationSizeSelector: [5, 10, 20, 50],
+                                movableColumns: true,
+                                initialSort: [
+                                    {column: "k", dir: "asc"}
+                                ],
+                                tooltips: true,
+                                tooltipsHeader: true,
+                                rowFormatter: function(row) {
+                                    // Resaltar la fila de convergencia final
+                                    if (row.getData().k === {{ results.iterations_count|default:0 }}) {
+                                        row.getElement().style.backgroundColor = "#DCFCE7";
+                                        row.getElement().style.fontWeight = "bold";
+                                    }
+                                }
+                            });
+                            
+                            console.log("Tabla inicializada correctamente");
+                            
+                            // Añadir un botón de descarga CSV
+                            if (iterationData.length > 0) {
+                                const downloadBtn = document.createElement("button");
+                                downloadBtn.innerHTML = "Descargar CSV";
+                                downloadBtn.className = "mt-2 px-3 py-1 bg-blue-500 hover:bg-blue-700 text-white rounded text-sm";
+                                downloadBtn.addEventListener("click", function() {
+                                    table.download("csv", "jacobi_iteraciones.csv");
+                                });
+                                document.getElementById("iterations-table").parentNode.appendChild(downloadBtn);
+                            }
+                            
+                            // Función para extraer datos de la tabla de texto
+                            function createTableFromText() {
+                                const tableData = [];
+                                // Buscar las filas de la tabla en el texto de los steps
+                                document.querySelectorAll('.step-item').forEach(item => {
+                                    const text = item.textContent.trim();
+                                    if (text.match(/^\d+ \| [-\d.]+ \|/)) {
+                                        // Es una fila de la tabla
+                                        const parts = text.split('|').map(p => p.trim());
+                                        if (parts.length >= 4) {
+                                            const k = parseInt(parts[0], 10);
+                                            if (!isNaN(k)) {
+                                                const row = { k: k };
+                                                // Extraer los valores x_i
+                                                for (let i = 1; i < parts.length - 1; i++) {
+                                                    row[`x_${i}`] = parseFloat(parts[i]) || 0;
+                                                }
+                                                // El último elemento es el error
+                                                row.error = parts[parts.length - 1] === '---' ? null : parseFloat(parts[parts.length - 1]) || 0;
+                                                tableData.push(row);
+                                            }
+                                        }
+                                    }
+                                });
+                                
+                                // Si no encontramos datos, crear una estructura básica
+                                if (tableData.length === 0) {
+                                    return [
+                                        { k: 0, x_1: 0, error: null }
+                                    ];
+                                }
+                                
+                                return tableData;
+                            }
+                            
+                        } catch(error) {
+                            console.error("Error al inicializar la tabla:", error);
+                            // Mostrar mensaje de error en la página
+                            const errorMsg = document.createElement("div");
+                            errorMsg.className = "bg-red-100 border border-red-400 text-red-700 p-3 rounded my-2";
+                            errorMsg.innerHTML = `<p>Error al inicializar la tabla: ${error.message}</p>
+                                                <p>Se mostrará la tabla en formato texto.</p>`;
+                            document.getElementById("iterations-table").parentNode.appendChild(errorMsg);
+                            
+                            // Mostrar la tabla en formato texto
+                            document.querySelectorAll('.step-item').forEach(item => {
+                                if (item.style.display === 'none' && 
+                                    (item.textContent.includes('Tabla de Iteraciones') || 
+                                     item.textContent.match(/^\d+ \| [-\d.]+ \|/))) {
+                                    item.style.display = '';  // Mostrar la tabla de texto
+                                }
+                            });
+                        }
+                    });
+                </script>
+            {% endif %}
+
+             {% if results.plot_path %}
+                 <div class="mb-4">
+                     <h3 class="text-lg font-semibold mb-2">Gráfica de Convergencia</h3>
+                     <img src="{% static results.plot_path %}" alt="Gráfica de Convergencia" class="mx-auto border rounded">
+                 </div>
+             {% endif %}
+
+            {% if results.steps %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Pasos del Cálculo</h3>
+                     {# Note: KaTeX auto-render script will process this section #}
+                     <div class="prose prose-sm max-w-none p-4 border rounded bg-gray-50 overflow-x-auto calculation-steps">
+                         {% for step in results.steps %}
+                            {# Detect step type and format accordingly #}
+                            {% if step|slice:":2" == "##" %}
+                                {# Main headers #}
+                                <div class="step-item font-bold text-lg my-3">{{ step|safe }}</div>
+                            {% elif step|slice:":2" == "**" or "**" in step|slice:":10" %}
+                                {# Subheaders or emphases #}
+                                {% if "Tabla de Iteraciones" in step %}
+                                    {# Ocultar la tabla de texto si ya tenemos Tabulator #}
+                                    {% if results.iterations_table_data %}
+                                        <div class="step-item font-semibold text-base my-2" style="display: none;">{{ step|safe }}</div>
+                                    {% else %}
+                                        <div class="step-item font-semibold text-base my-2">{{ step|safe }}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="step-item font-semibold text-base my-2">{{ step|safe }}</div>
+                                {% endif %}
+                            {% elif "Calculando " in step %}
+                                {# Calculation steps #}
+                                <div class="step-item my-2 calculation-formula">{{ step|safe }}</div>
+                            {% elif "$" in step %}
+                                {# Math formulas #}
+                                <div class="step-item my-2 math-content">{{ step|safe }}</div>
+                            {% else %}
+                                {# Regular text - ocultar las filas de la tabla de iteraciones si tenemos Tabulator #}
+                                {% if "k | x_" in step or " | " in step and results.iterations_table_data %}
+                                    {# Esta es una fila de la tabla, ocultar si tenemos Tabulator #}
+                                    <div class="step-item my-1" style="display: none;">{{ step|safe }}</div>
+                                {% else %}
+                                    <div class="step-item my-1">{{ step|safe }}</div>
+                                {% endif %}
+                            {% endif %}
+                         {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Add Export Buttons Here if needed #}
+
+        </div>
+    {% endif %}
+
+</div>
+
+
+{# --- Dynamic Matrix Grid Script --- #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const nSizeInput = document.getElementById('n_size_input');
+    const gridContainer = document.getElementById('matrix-grid-container');
+    const matrixDataInput = document.getElementById('{{ form.matrix_data.id_for_label }}');
+    const vectorDataInput = document.getElementById('{{ form.vector_data.id_for_label }}');
+
+    function generateGrid(size) {
+        gridContainer.innerHTML = ''; // Clear previous grid
+        if (size < 2 || size > 10) {
+             gridContainer.innerHTML = '<p class="text-red-500 text-sm">Tamaño inválido. Debe estar entre 2 y 10.</p>';
+             matrixDataInput.value = '';
+             vectorDataInput.value = '';
+             return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'w-full border-collapse';
+        const tbody = document.createElement('tbody');
+
+        // Create input cells
+        for (let i = 0; i < size; i++) {
+            const row = document.createElement('tr');
+            for (let j = 0; j < size; j++) {
+                const cell = document.createElement('td');
+                cell.className = 'p-1 border';
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.step = 'any';
+                input.className = 'w-full p-1 border rounded text-center';
+                input.setAttribute('data-row', i);
+                input.setAttribute('data-col', j);
+                input.setAttribute('aria-label', `Matrix A element row ${i+1} column ${j+1}`);
+                input.addEventListener('input', updateHiddenFields);
+                cell.appendChild(input);
+                row.appendChild(cell);
+            }
+            // Input for vector b
+            const cellB = document.createElement('td');
+            cellB.className = 'p-1 border bg-gray-100';
+            const inputB = document.createElement('input');
+            inputB.type = 'number';
+            inputB.step = 'any';
+            inputB.className = 'w-full p-1 border rounded text-center';
+            inputB.setAttribute('data-row', i);
+            inputB.setAttribute('data-col', 'b');
+            inputB.setAttribute('aria-label', `Vector b element row ${i+1}`);
+            inputB.addEventListener('input', updateHiddenFields);
+            cellB.appendChild(inputB);
+            row.appendChild(cellB);
+            tbody.appendChild(row);
+        }
+        table.appendChild(tbody);
+        gridContainer.appendChild(table);
+        updateHiddenFields(); // Initialize hidden fields
+    }
+
+    function updateHiddenFields() {
+        const size = parseInt(nSizeInput.value, 10);
+        if (isNaN(size) || size < 2 || size > 10) {
+             matrixDataInput.value = '';
+             vectorDataInput.value = '';
+             return; // Don't update if size is invalid
+        }
+
+        const matrix = [];
+        const vector = [];
+        for (let i = 0; i < size; i++) {
+            const row = [];
+            for (let j = 0; j < size; j++) {
+                const input = gridContainer.querySelector(`input[data-row='${i}'][data-col='${j}']`);
+                row.push(input ? parseFloat(input.value) || 0 : 0); // Default to 0 if empty/invalid
+            }
+            matrix.push(row);
+            const inputB = gridContainer.querySelector(`input[data-row='${i}'][data-col='b']`);
+            vector.push(inputB ? parseFloat(inputB.value) || 0 : 0);
+        }
+        matrixDataInput.value = JSON.stringify(matrix);
+        vectorDataInput.value = JSON.stringify(vector);
+    }
+
+    // Initial grid generation
+    generateGrid(parseInt(nSizeInput.value, 10));
+
+    // Update grid on size change
+    nSizeInput.addEventListener('change', function() {
+        generateGrid(parseInt(this.value, 10));
+    });
+
+    // --- Iterative Fields Toggle --- (Keep existing JS for this)
+    const methodRadios = document.querySelectorAll('input[name="method"]');
+    const iterativeFieldsDiv = document.getElementById('iterative-fields');
+    const iterativeMethods = ['jacobi', 'gauss_seidel'];
+
+    function toggleIterativeFields() {
+        let show = false;
+        methodRadios.forEach(radio => {
+            if (radio.checked && iterativeMethods.includes(radio.value)) {
+                show = true;
+            }
+        });
+        iterativeFieldsDiv.style.display = show ? 'block' : 'none';
+    }
+
+    methodRadios.forEach(radio => {
+        radio.addEventListener('change', toggleIterativeFields);
+    });
+    toggleIterativeFields(); // Initial check
+
+});
+</script>
+
+{% endblock %} 
