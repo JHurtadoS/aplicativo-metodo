@@ -8,6 +8,9 @@
     <!-- Tailwind CSS via CDN (modo play para desarrollo) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Preact via CDN (sin build tools) -->
     <script src="https://unpkg.com/preact@10/dist/preact.min.js"></script>
     <script src="https://unpkg.com/preact@10/hooks/dist/hooks.umd.js"></script>
@@ -20,11 +23,27 @@
         window.render = preact.render;
         window.useState = preactHooks.useState;
         window.useEffect = preactHooks.useEffect;
+        window.React = {createElement: preact.h, ...preactHooks};
     </script>
     
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Navegación global (opcional) -->
+    <nav class="bg-indigo-700 text-white py-2 shadow-md">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <a href="/" class="text-white font-bold text-xl">Métodos Numéricos</a>
+            <div class="flex space-x-4">
+                <a href="/" class="text-white hover:text-indigo-200">
+                    <i class="fas fa-home mr-1"></i> Inicio
+                </a>
+                <a href="/historial/" class="text-white hover:text-indigo-200">
+                    <i class="fas fa-history mr-1"></i> Historial
+                </a>
+            </div>
+        </div>
+    </nav>
+    
     {% block content %}{% endblock %}
     
     {% block scripts %}{% endblock %}

@@ -7,6 +7,12 @@ METHOD_CHOICES = [
     # ('polynomial_regression', 'Regresión Polinomial (Mínimos Cuadrados)'), # Optional
 ]
 
+SOLVER_CHOICES = [
+    ('gauss', 'Eliminación Gaussiana (con pivoteo parcial)'),
+    ('lu', 'Descomposición LU (Doolittle)'),
+    # Los métodos iterativos no tienen sentido para sistemas de interpolación
+]
+
 class InterpolacionForm(forms.Form):
     points = forms.CharField(
         label='Puntos (x,y)',
@@ -17,6 +23,12 @@ class InterpolacionForm(forms.Form):
         label='Método a utilizar',
         choices=METHOD_CHOICES,
         widget=forms.RadioSelect
+    )
+    solver = forms.ChoiceField(
+        label='Solver para sistema lineal',
+        choices=SOLVER_CHOICES,
+        initial='gauss',
+        help_text='Método para resolver el sistema lineal subyacente.'
     )
     # Optional: Add degree field for polynomial regression if implemented
     # polynomial_degree = forms.IntegerField(

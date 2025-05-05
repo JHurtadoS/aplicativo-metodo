@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interpolación - Resultado</title>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Resultado de Interpolación Numérica</h1>
+            <p>Fecha de cálculo: {{ timestamp }}</p>
+        </header>
+        
+        <section>
+            <h2>Método: {{ result.metodo }}</h2>
+            
+            <div>
+                <h3>Puntos de entrada</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>x</th>
+                            <th>y</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for punto in result.entrada.puntos %}
+                        <tr>
+                            <td>{{ punto.0 }}</td>
+                            <td>{{ punto.1 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if result.polinomio_tex %}
+            <div>
+                <h3>Polinomio resultante</h3>
+                <p>{{ result.polinomio_tex|safe }}</p>
+            </div>
+            {% endif %}
+            
+            {% if result.grafico_path %}
+            <div>
+                <h3>Gráfica</h3>
+                <img src="{{ STATIC_URL }}{{ result.grafico_path }}" alt="Gráfica de interpolación">
+            </div>
+            {% endif %}
+            
+            <div>
+                <h3>Pasos del método</h3>
+                <div class="steps">
+                    {% for paso in result.pasos %}
+                    <p>{{ paso|safe }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        
+        <footer class="footer">
+            <p>App de Métodos Numéricos - Instituto Mexicano del Transporte</p>
+            <p>Documento generado automáticamente</p>
+        </footer>
+    </div>
+</body>
+</html> 

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load sistemas_filters %}
 
 {% block title %}Sistemas de Ecuaciones Lineales{% endblock %}
 
@@ -290,6 +291,20 @@
                 </div>
             </div>
 
+            {# Campo para ingresar la solución exacta #}
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.exact_solution.id_for_label }}">
+                    {{ form.exact_solution.label }}
+                </label>
+                {{ form.exact_solution }}
+                {% if form.exact_solution.help_text %}
+                    <p class="text-gray-600 text-xs italic">{{ form.exact_solution.help_text }}</p>
+                {% endif %}
+                {% if form.exact_solution.errors %}
+                    <p class="text-red-500 text-xs italic">{{ form.exact_solution.errors|first }}</p>
+                {% endif %}
+            </div>
+
             {# Display ALL non-field errors #}
             {% if form.non_field_errors %}
                 <div class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -333,35 +348,6 @@
                 </div>
             {% endif %}
 
-            {# Display L and U matrices for LU method #}
-            {% if results.method == 'Descomposición LU (Doolittle)' and not results.error %}
-                <div class="mb-4">
-                    <h3 class="text-lg font-semibold mb-2">Matrices L y U</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="p-3 bg-gray-100 rounded overflow-x-auto">
-                            <p class="font-mono text-sm mb-1">L =</p>
-                            {# Directly render the LaTeX string #}
-                            {% if results.L_latex %} 
-                                <div class="katex-display">$${{ results.L_latex }}$$</div>
-                            {% else %}N/A{% endif %}
-                        </div>
-                        <div class="p-3 bg-gray-100 rounded overflow-x-auto">
-                            <p class="font-mono text-sm mb-1">U =</p>
-                            {# Directly render the LaTeX string #}
-                            {% if results.U_latex %} 
-                                <div class="katex-display">$${{ results.U_latex }}$$</div>
-                            {% else %}N/A{% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-4">
-                     <h3 class="text-lg font-semibold mb-2">Vector Intermedio y</h3>
-                     <div class="p-3 bg-gray-100 rounded overflow-x-auto">
-                         <code class="text-sm">y = {{ results.y_vector }}</code>
-                     </div>
-                 </div>
-            {% endif %}
-
             {% if results.solution %}
                 <div class="mb-4">
                     <h3 class="text-lg font-semibold mb-2">Solución Encontrada</h3>
@@ -369,6 +355,117 @@
                         <code class="text-sm">x = {{ results.solution }}</code>
                     </div>
                 </div>
+            {% endif %}
+
+            {% if results.exact_solution and results.error_metrics %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Comparación con Solución Exacta</h3>
+                    <div id="solution-comparison" class="mt-2"></div>
+                    <div id="error-metrics" class="mt-2"></div>
+                    <!-- Fallback simple siempre visible -->
+                    <div class="mt-4 p-3 border rounded bg-gray-50">
+                        <h4 class="text-lg font-semibold mb-2">Datos básicos (fallback)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <h5 class="font-semibold">Solución aproximada:</h5>
+                                <pre class="bg-gray-100 p-2 text-sm">{{ results.solution }}</pre>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold">Solución exacta:</h5>
+                                <pre class="bg-gray-100 p-2 text-sm">{{ results.exact_solution }}</pre>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold">Error absoluto máximo:</h5>
+                                <pre class="bg-gray-100 p-2 text-sm">{{ results.error_metrics.max_abs_error }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script type="text/javascript">
+                    document.addEventListener("DOMContentLoaded", function() {
+                        console.log("Iniciando renderizado de comparación...");
+                        console.log("Datos de solución:", {{ results.solution|safe }});
+                        console.log("Datos de solución exacta:", {{ results.exact_solution|safe }});
+                        console.log("Datos de métricas de error:", {{ results.error_metrics|safe }});
+                        
+                        try {
+                            // Importar la función de comparación visual desde el módulo
+                            console.log("Intentando importar visual_tools.js...");
+                            import('/static/js/visual_tools.js')
+                                .then(module => {
+                                    console.log("Módulo importado correctamente:", module);
+                                    // Renderizar la comparación visual
+                                    module.renderSolutionComparison(
+                                        'solution-comparison',
+                                        {{ results.solution|safe }},  // Solución aproximada
+                                        {{ results.exact_solution|safe }}  // Solución exacta
+                                    );
+                                    
+                                    // Renderizar los errores métricos en una tabla
+                                    module.renderErrorMetrics(
+                                        'error-metrics',
+                                        {{ results.error_metrics|safe }}
+                                    );
+                                    console.log("Renderizado completado");
+                                })
+                                .catch(error => {
+                                    console.error("Error importando el módulo de herramientas visuales:", error);
+                                    // Mostrar una tabla básica como alternativa
+                                    renderBasicComparison();
+                                });
+                        } catch(error) {
+                            console.error("Error al inicializar la comparación visual:", error);
+                            // Mostrar una comparación básica en formato texto
+                            renderBasicComparison();
+                        }
+                        
+                        // Función para crear una comparación básica en HTML si falla el módulo
+                        function renderBasicComparison() {
+                            const container = document.getElementById('solution-comparison');
+                            if (!container) return;
+                            
+                            // Obtener datos
+                            const solution = {{ results.solution|safe }};
+                            const exactSolution = {{ results.exact_solution|safe }};
+                            const absoluteError = {{ results.error_metrics.absolute_error|safe }};
+                            
+                            console.log("Renderizando comparación básica con:", {solution, exactSolution, absoluteError});
+                            
+                            // Construir HTML de tabla
+                            let tableHTML = `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border border-gray-300">
+                                        <thead class="bg-gray-100">
+                                            <tr>
+                                                <th class="py-2 px-3 text-left">Variable</th>
+                                                <th class="py-2 px-3 text-right">Solución Aproximada</th>
+                                                <th class="py-2 px-3 text-right">Solución Exacta</th>
+                                                <th class="py-2 px-3 text-right">Error Absoluto</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`;
+                            
+                            // Generar filas de manera dinámica
+                            for (let i = 0; i < solution.length; i++) {
+                                tableHTML += `
+                                    <tr>
+                                        <td class="py-2 px-3 border-t">x<sub>${i+1}</sub></td>
+                                        <td class="py-2 px-3 border-t text-right">${solution[i].toFixed(6)}</td>
+                                        <td class="py-2 px-3 border-t text-right">${exactSolution[i].toFixed(6)}</td>
+                                        <td class="py-2 px-3 border-t text-right">${absoluteError[i].toFixed(6)}</td>
+                                    </tr>`;
+                            }
+                            
+                            tableHTML += `
+                                        </tbody>
+                                    </table>
+                                </div>`;
+                            
+                            container.innerHTML = tableHTML;
+                        }
+                    });
+                </script>
             {% endif %}
 
             {% if results.iterations is not None %}
@@ -608,6 +705,44 @@
              {% endif %}
 
             {% if results.steps %}
+                {% if results.L_matrix and results.U_matrix and results.method == 'Descomposición LU (Doolittle)' %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Matrices L y U y Vector Intermedio</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="border rounded p-4 bg-white shadow-sm">
+                            <h4 class="text-md font-medium mb-2 text-center">Matriz L</h4>
+                            <div class="prose prose-sm max-w-none math-content text-center">
+                                $L = {% for row in results.L_matrix %}
+                                \begin{bmatrix}
+                                {% for element in row %}{{ element|floatformat:4 }}{% if not forloop.last %} & {% endif %}{% endfor %}
+                                \end{bmatrix}{% if not forloop.last %} \\ {% endif %}
+                                {% endfor %}$
+                            </div>
+                        </div>
+                        <div class="border rounded p-4 bg-white shadow-sm">
+                            <h4 class="text-md font-medium mb-2 text-center">Matriz U</h4>
+                            <div class="prose prose-sm max-w-none math-content text-center">
+                                $U = {% for row in results.U_matrix %}
+                                \begin{bmatrix}
+                                {% for element in row %}{{ element|floatformat:4 }}{% if not forloop.last %} & {% endif %}{% endfor %}
+                                \end{bmatrix}{% if not forloop.last %} \\ {% endif %}
+                                {% endfor %}$
+                            </div>
+                        </div>
+                        <div class="border rounded p-4 bg-white shadow-sm">
+                            <h4 class="text-md font-medium mb-2 text-center">Vector Intermedio y</h4>
+                            <div class="prose prose-sm max-w-none math-content text-center">
+                                {% for step in results.steps %}
+                                    {% if "Vector intermedio $y =" in step %}
+                                        {{ step|safe }}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="mb-4">
                     <h3 class="text-lg font-semibold mb-2">Pasos del Cálculo</h3>
                      {# Note: KaTeX auto-render script will process this section #}

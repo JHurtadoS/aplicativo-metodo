@@ -48,6 +48,13 @@ class SistemaLinealForm(forms.Form):
         min_value=1,
         max_value=1000
     )
+    
+    exact_solution = forms.CharField(
+        label='Solución Exacta (Opcional)',
+        required=False,
+        widget=forms.TextInput(attrs={'placeholder': 'Ej: 1,0,-2'}),
+        help_text='Valores separados por coma. Si se proporciona, se utilizará para calcular el error.'
+    )
 
     # Remove clean_matrix_input as parsing happens differently now
     # We will add a general clean method to construct A and b
@@ -116,6 +123,25 @@ class SistemaLinealForm(forms.Form):
             cleaned_data['initial_guess_vector'] = np.zeros(n_size, dtype=float)
         else:
             cleaned_data['initial_guess_vector'] = None
+
+        # Validate exact solution size against n_size (only if n_size is valid)
+        exact_solution_str = cleaned_data.get('exact_solution', '').strip()
+        if exact_solution_str:
+            if n_size:
+                try:
+                    solution_list = [float(x.strip()) for x in exact_solution_str.split(',')]
+                    solution_vector = np.array(solution_list, dtype=float)
+                    if len(solution_vector) != n_size:
+                         self.add_error('exact_solution', f"El vector de la solución exacta debe tener {n_size} elementos.")
+                    else:
+                        cleaned_data['exact_solution_vector'] = solution_vector
+                except ValueError:
+                     self.add_error('exact_solution', "Formato inválido. Use números separados por comas.")
+            else:
+                 # Can't validate length if n_size is invalid
+                 self.add_error('exact_solution', "No se puede validar la solución exacta sin un tamaño de matriz válido.")
+        else:
+            cleaned_data['exact_solution_vector'] = None
 
         # Validate required fields for iterative methods
         if method in ['jacobi', 'gauss_seidel']:

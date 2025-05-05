@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import uuid
 import json
+from core.utils import fix_nested_matrices
 
 def format_matrix_sympy(matrix):
     """Formats a NumPy matrix using SymPy for LaTeX rendering."""
@@ -12,21 +13,33 @@ def format_matrix_sympy(matrix):
         # Using a reasonable max_denominator to avoid overly complex fractions
         # Or simply use sympy.Matrix for direct LaTeX output of floats
         sp_matrix = sympy.Matrix(matrix).evalf(4) # Display with 4 significant digits
-        latex_str = sympy.latex(sp_matrix)
         
-        # Ensure proper matrix formatting with braces
-        if not latex_str.startswith("\\begin{pmatrix}") and not latex_str.startswith("\\begin{bmatrix}"):
-            # If sympy didn't create a proper matrix environment, wrap it
-            if len(matrix.shape) > 1 and matrix.shape[0] > 1 and matrix.shape[1] > 1:
-                # It's a proper matrix
-                return "\\begin{bmatrix}" + latex_str + "\\end{bmatrix}"
-            elif len(matrix.shape) > 1 and (matrix.shape[0] == 1 or matrix.shape[1] == 1):
-                # It's a vector
-                return "\\begin{bmatrix}" + latex_str + "\\end{bmatrix}"
-        
-        return latex_str
-    except Exception:
-        # Fallback to simple string representation if SymPy fails
+        # A more direct approach to generate proper LaTeX for matrices
+        # Bypass sympy's potentially problematic nesting
+        if isinstance(matrix, np.ndarray) and len(matrix.shape) > 1:
+            rows, cols = matrix.shape
+            
+            # Generate the LaTeX manually to avoid nested matrices
+            latex_str = "\\begin{bmatrix}\n"
+            for i in range(rows):
+                row_str = " & ".join([f"{matrix[i, j]:.4f}" for j in range(cols)])
+                latex_str += row_str
+                if i < rows - 1:
+                    latex_str += " \\\\\n"
+                else:
+                    latex_str += "\n"
+            latex_str += "\\end{bmatrix}"
+            
+            return latex_str
+        else:
+            # Fall back to SymPy for vectors or other cases
+            latex_str = sympy.latex(sp_matrix)
+            
+            # Fix nested matrix environments regardless of where they occur
+            return fix_nested_matrices(latex_str)
+    except Exception as e:
+        # Fallback to simple string representation if our formatting fails
+        print(f"Error formatting matrix: {e}")
         return np.array_str(matrix, precision=4)
 
 def format_lu_element(letter, i, j):
@@ -55,8 +68,15 @@ def format_lu_step(step_type, element, equation, value):
     """
     return f"- {step_type}: ${equation} = {value:.4f}$"
 
-def gaussian_elimination(A, b):
-    """Solves Ax = b using Gaussian elimination with partial pivoting."""
+def gaussian_elimination(A, b, exact_solution=None):
+    """
+    Solves Ax = b using Gaussian elimination with partial pivoting.
+    
+    Args:
+        A: Coefficient matrix
+        b: Right-hand side vector
+        exact_solution: Optional exact solution vector for error comparison
+    """
     steps = ["## Inicio: Eliminación Gaussiana con Pivoteo Parcial"]
     try:
         n = len(b)
@@ -124,30 +144,56 @@ def gaussian_elimination(A, b):
                 return {'error': error_msg, 'steps': steps}
 
             x[i] = (Ab[i, n] - sum_ax) / Ab[i, i]
-            # Build the sum string for LaTeX if needed
-            sum_str = ""
+            # Use a simpler approach without complex subscripts causing KaTeX parsing errors
             if len(Ab[i, i + 1:n]) > 0:
-                 sum_str = " - \sum_{{j={i+2}}}^{{{n}}} U_{{{i+1},j}} x_{{j}}" # Representing the sum generally
-
-            step_latex = f" $ x_{{{i + 1}}} = \frac{{ b'_{{{i+1}}}{sum_str} }}{{ U_{{{i+1},{i+1}}} }} = \frac{{ {Ab[i, n]:.4f} - ({sum_ax:.4f}) }}{{ {Ab[i, i]:.4f} }} = {x[i]:.6f} $ "
+                # Show the calculation without the problematic sum notation
+                step_latex = f" $ x_{{{i + 1}}} = \\frac{{ b'_{{{i+1}}} - \\text{{términos conocidos}} }}{{ U_{{{i+1}{i+1}}} }} = \\frac{{ {Ab[i, n]:.4f} - ({sum_ax:.4f}) }}{{ {Ab[i, i]:.4f} }} = {x[i]:.6f} $ "
+            else:
+                # No sum needed for the last variable
+                step_latex = f" $ x_{{{i + 1}}} = \\frac{{ b'_{{{i+1}}} }}{{ U_{{{i+1}{i+1}}} }} = \\frac{{ {Ab[i, n]:.4f} }}{{ {Ab[i, i]:.4f} }} = {x[i]:.6f} $ "
+            
             steps.append(f"- Calculando x_{{{i + 1}}}: {step_latex}")
 
 
         steps.append("\n**Solución Final:**")
         steps.append(f"$x = {format_matrix_sympy(x.reshape(-1,1))}$") # Format vector as column matrix
+        
+        # Calculate error metrics if exact solution is provided
+        error_metrics = None
+        if exact_solution is not None:
+            error_metrics = calculate_error_metrics(exact_solution, x)
+            steps.append("\n**Comparación con Solución Exacta:**")
+            steps.append(f"Solución Exacta: $x_{{exact}} = {format_matrix_sympy(np.array(exact_solution).reshape(-1,1))}$")
+            steps.append(f"Error Absoluto Máximo: ${error_metrics['max_abs_error']:.6e}$")
+            steps.append(f"Error Relativo Máximo: ${error_metrics['max_rel_error']:.6e}$")
+            steps.append(f"Norma del Error Absoluto: ${error_metrics['abs_error_norm']:.6e}$")
 
-        return {
+        result = {
             'method': 'Eliminación Gaussiana (con pivoteo parcial)',
             'steps': steps,
             'solution': x.tolist() # Return solution as list
         }
+        
+        # Add error metrics to result if available
+        if error_metrics:
+            result['error_metrics'] = error_metrics
+            result['exact_solution'] = exact_solution
+
+        return result
     except Exception as e:
         error_msg = f"Error inesperado durante la eliminación gaussiana: {e}"
         steps.append(f"**{error_msg}**")
         return {'error': error_msg, 'steps': steps}
 
-def lu_decomposition(A, b):
-    """Solves Ax = b using LU decomposition (Doolittle method)."""
+def lu_decomposition(A, b, exact_solution=None):
+    """
+    Solves Ax = b using LU decomposition (Doolittle method).
+    
+    Args:
+        A: Coefficient matrix
+        b: Right-hand side vector
+        exact_solution: Optional exact solution vector for error comparison
+    """
     steps = ["## Inicio: Descomposición LU (Doolittle)"]
     try:
         n = A.shape[0]
@@ -251,50 +297,60 @@ def lu_decomposition(A, b):
             sum_ux = np.dot(U[i, i + 1:], x[i + 1:])
             x[i] = (y[i] - sum_ux) / U[i, i]
             
-            # Simple direct LaTeX formatting
-            if i < n - 1:
-                # Create simple sum terms
-                sum_parts = []
-                for j in range(i + 1, n):
-                    sum_parts.append(f"U_{{{i+1},{j+1}}} \\cdot x_{{{j+1}}}")
-                sum_expr = " + ".join(sum_parts)
-                latex = f"x_{{{i+1}}} = \\frac{{y_{{{i+1}}} - ({sum_expr})}}{{U_{{{i+1},{i+1}}}}} = {x[i]:.6f}"
+            # Instead of using a complex sum notation with commas that cause KaTeX parsing errors
+            if len(U[i, i + 1:n]) > 0:
+                # For brevity and clarity, just show specific calculation without using the problematic sum notation
+                step_latex = f" $ x_{{{i + 1}}} = \\frac{{ b'_{{{i+1}}} - \\text{{términos conocidos}} }}{{ U_{{{i+1}{i+1}}} }} = \\frac{{ {y[i]:.4f} - ({sum_ux:.4f}) }}{{ {U[i, i]:.4f} }} = {x[i]:.6f} $ "
             else:
-                latex = f"x_{{{i+1}}} = \\frac{{y_{{{i+1}}}}}{{U_{{{i+1},{i+1}}}}} = {x[i]:.6f}"
+                # No sum needed for the last variable
+                step_latex = f" $ x_{{{i + 1}}} = \\frac{{ b'_{{{i+1}}} }}{{ U_{{{i+1}{i+1}}} }} = \\frac{{ {y[i]:.4f} }}{{ {U[i, i]:.4f} }} = {x[i]:.6f} $ "
             
-            steps.append(f"- Calculando x_{{{i+1}}}: ${latex}$")
+            steps.append(f"- Calculando x_{{{i + 1}}}: {step_latex}")
 
         steps.append("\n**Solución Final:**")
         steps.append(f"$x = {format_matrix_sympy(x.reshape(-1,1))}$")
 
-        return {
+        # Calculate error metrics if exact solution is provided
+        error_metrics = None
+        if exact_solution is not None:
+            error_metrics = calculate_error_metrics(exact_solution, x)
+            steps.append("\n**Comparación con Solución Exacta:**")
+            steps.append(f"Solución Exacta: $x_{{exact}} = {format_matrix_sympy(np.array(exact_solution).reshape(-1,1))}$")
+            steps.append(f"Error Absoluto Máximo: ${error_metrics['max_abs_error']:.6e}$")
+            steps.append(f"Error Relativo Máximo: ${error_metrics['max_rel_error']:.6e}$")
+            steps.append(f"Norma del Error Absoluto: ${error_metrics['abs_error_norm']:.6e}$")
+        
+        result = {
             'method': 'Descomposición LU (Doolittle)',
             'steps': steps,
+            'solution': x.tolist(),
             'L_matrix': L.tolist(),
-            'U_matrix': U.tolist(),
-            'L_latex': format_matrix_sympy(L),
-            'U_latex': format_matrix_sympy(U),
-            'y_vector': y.tolist(),
-            'solution': x.tolist()
+            'U_matrix': U.tolist()
         }
+        
+        # Add error metrics to result if available
+        if error_metrics:
+            result['error_metrics'] = error_metrics
+            result['exact_solution'] = exact_solution
+        
+        return result
 
     except Exception as e:
         error_msg = f"Error inesperado durante la descomposición LU: {e}"
         steps.append(f"**{error_msg}**")
         return {'error': error_msg, 'steps': steps}
 
-def jacobi_method(A, b, x0, tol, max_iter):
-    """Solves Ax = b using the Jacobi iterative method.
+def jacobi_method(A, b, x0, tol, max_iter, exact_solution=None):
+    """
+    Solves Ax = b using the Jacobi iterative method.
     
     Args:
-        A: coefficient matrix (numpy array)
-        b: right-hand side vector (numpy array)
-        x0: initial guess vector (numpy array)
-        tol: tolerance for convergence
-        max_iter: maximum number of iterations
-        
-    Returns:
-        Dictionary with solution and step information
+        A: Coefficient matrix
+        b: Right-hand side vector
+        x0: Initial guess for solution
+        tol: Tolerance for convergence
+        max_iter: Maximum number of iterations
+        exact_solution: Optional exact solution vector for error comparison
     """
     steps = ["## Inicio: Método Iterativo de Jacobi"]
     try:
@@ -419,7 +475,8 @@ def jacobi_method(A, b, x0, tol, max_iter):
         
         try:
             # Add initial row (k=0)
-            initial_data = {"k": 0}
+            initial_data = {}  # Usar un diccionario sin tipo explícito
+            initial_data["k"] = 0  # Añadir la clave k que faltaba
             for j in range(n):
                 # Convert numpy values to Python native types
                 initial_data[f"x_{j+1}"] = float(x0[j])
@@ -428,7 +485,8 @@ def jacobi_method(A, b, x0, tol, max_iter):
             
             # Add iteration rows
             for i in range(min(k, max_iter)):
-                row_data = {"k": i+1}
+                row_data = {}  # Usar un diccionario sin tipo explícito
+                row_data["k"] = i+1  # Añadir la clave k que faltaba
                 for j in range(n):
                     # Convert numpy values to Python native types
                     row_data[f"x_{j+1}"] = float(iterations[i][j])
@@ -471,34 +529,50 @@ def jacobi_method(A, b, x0, tol, max_iter):
         except Exception as e:
             print(f"Error serializando datos de tabla: {e}")
         
-        return {
+        # Create the result object
+        result = {
             'method': 'Método de Jacobi',
             'steps': steps,
             'solution': x.tolist(),
+            'convergence': 'converged' if error <= tol else 'diverged',
             'iterations': iterations,
-            'errors': error_history,
-            'iterations_count': k,
+            'error_history': error_history,
             'error_plot_data': error_plot_data,
-            'converged': error <= tol,
             'iterations_table_data': iterations_table_json  # Enviar la tabla como JSON string
         }
+        
+        # Calculate error metrics if exact solution is provided
+        error_metrics = None
+        if exact_solution is not None and error <= tol:
+            error_metrics = calculate_error_metrics(exact_solution, x)
+            steps.append("\n**Comparación con Solución Exacta:**")
+            steps.append(f"Solución Exacta: $x_{{exact}} = {format_matrix_sympy(np.array(exact_solution).reshape(-1,1))}$")
+            steps.append(f"Error Absoluto Máximo: ${error_metrics['max_abs_error']:.6e}$")
+            steps.append(f"Error Relativo Máximo: ${error_metrics['max_rel_error']:.6e}$")
+            steps.append(f"Norma del Error Absoluto: ${error_metrics['abs_error_norm']:.6e}$")
+        
+        # Add error metrics to result if available
+        if error_metrics:
+            result['error_metrics'] = error_metrics
+            result['exact_solution'] = exact_solution
+        
+        return result
     except Exception as e:
         error_msg = f"Error inesperado durante el método de Jacobi: {e}"
         steps.append(f"**{error_msg}**")
         return {'error': error_msg, 'steps': steps}
 
-def gauss_seidel_method(A, b, x0, tol, max_iter):
-    """Solves Ax = b using the Gauss-Seidel iterative method.
+def gauss_seidel_method(A, b, x0, tol, max_iter, exact_solution=None):
+    """
+    Solves Ax = b using the Gauss-Seidel iterative method.
     
     Args:
-        A: coefficient matrix (numpy array)
-        b: right-hand side vector (numpy array)
-        x0: initial guess vector (numpy array)
-        tol: tolerance for convergence
-        max_iter: maximum number of iterations
-        
-    Returns:
-        Dictionary with solution and step information
+        A: Coefficient matrix
+        b: Right-hand side vector
+        x0: Initial guess for solution
+        tol: Tolerance for convergence
+        max_iter: Maximum number of iterations
+        exact_solution: Optional exact solution vector for error comparison
     """
     steps = ["## Inicio: Método Iterativo de Gauss-Seidel"]
     try:
@@ -663,7 +737,8 @@ def gauss_seidel_method(A, b, x0, tol, max_iter):
         
         try:
             # Add initial row (k=0)
-            initial_data = {"k": 0}
+            initial_data = {}  # Usar un diccionario sin tipo explícito
+            initial_data["k"] = 0  # Añadir la clave k que faltaba
             for j in range(n):
                 # Convert numpy values to Python native types
                 initial_data[f"x_{j+1}"] = float(x0[j])
@@ -672,7 +747,8 @@ def gauss_seidel_method(A, b, x0, tol, max_iter):
             
             # Add iteration rows
             for i in range(min(k, max_iter)):
-                row_data = {"k": i+1}
+                row_data = {}  # Usar un diccionario sin tipo explícito
+                row_data["k"] = i+1  # Añadir la clave k que faltaba
                 for j in range(n):
                     # Convert numpy values to Python native types
                     row_data[f"x_{j+1}"] = float(iterations[i][j])
@@ -715,21 +791,107 @@ def gauss_seidel_method(A, b, x0, tol, max_iter):
         except Exception as e:
             print(f"Error serializando datos de tabla: {e}")
         
-        return {
+        # Create the result object
+        result = {
             'method': 'Método de Gauss-Seidel',
             'steps': steps,
             'solution': x.tolist(),
+            'convergence': 'converged' if error <= tol else 'diverged',
             'iterations': iterations,
-            'errors': error_history,
-            'iterations_count': k,
+            'error_history': error_history,
             'error_plot_data': error_plot_data,
-            'converged': error <= tol,
             'iterations_table_data': iterations_table_json  # Enviar la tabla como JSON string
         }
+        
+        # Calculate error metrics if exact solution is provided
+        error_metrics = None
+        if exact_solution is not None and error <= tol:
+            error_metrics = calculate_error_metrics(exact_solution, x)
+            steps.append("\n**Comparación con Solución Exacta:**")
+            steps.append(f"Solución Exacta: $x_{{exact}} = {format_matrix_sympy(np.array(exact_solution).reshape(-1,1))}$")
+            steps.append(f"Error Absoluto Máximo: ${error_metrics['max_abs_error']:.6e}$")
+            steps.append(f"Error Relativo Máximo: ${error_metrics['max_rel_error']:.6e}$")
+            steps.append(f"Norma del Error Absoluto: ${error_metrics['abs_error_norm']:.6e}$")
+        
+        # Add error metrics to result if available
+        if error_metrics:
+            result['error_metrics'] = error_metrics
+            result['exact_solution'] = exact_solution
+        
+        return result
     except Exception as e:
         error_msg = f"Error inesperado durante el método de Gauss-Seidel: {e}"
         steps.append(f"**{error_msg}**")
         return {'error': error_msg, 'steps': steps}
+
+def calculate_error_metrics(exact_solution, approx_solution):
+    """
+    Calculate error metrics between exact and approximate solutions.
+    
+    Args:
+        exact_solution: Numpy array of the exact solution values
+        approx_solution: Numpy array of the approximate solution values
+        
+    Returns:
+        Dict with error metrics: absolute error, relative error, etc.
+    """
+    exact = np.array(exact_solution, dtype=float)
+    approx = np.array(approx_solution, dtype=float)
+    
+    # Calculate error metrics
+    absolute_error = np.abs(exact - approx)
+    relative_error = np.zeros_like(absolute_error)
+    # Avoid division by zero for relative error
+    nonzero_mask = ~np.isclose(exact, 0)
+    relative_error[nonzero_mask] = absolute_error[nonzero_mask] / np.abs(exact[nonzero_mask])
+    
+    # Calculate overall error norms
+    abs_error_norm = np.linalg.norm(absolute_error)
+    rel_error_norm = np.linalg.norm(relative_error)
+    
+    return {
+        'absolute_error': absolute_error.tolist(),
+        'relative_error': relative_error.tolist(),
+        'abs_error_norm': float(abs_error_norm),
+        'rel_error_norm': float(rel_error_norm),
+        'max_abs_error': float(np.max(absolute_error)),
+        'max_rel_error': float(np.max(relative_error))
+    }
+
+def solve_system(A, b, method="gauss", tol=1e-10, max_iter=100, initial_guess=None):
+    """
+    Función unificada para resolver sistemas lineales con diferentes métodos.
+    
+    Args:
+        A: Matriz de coeficientes
+        b: Vector del lado derecho
+        method: Método a utilizar ("gauss", "lu", "jacobi", "gauss_seidel")
+        tol: Tolerancia para métodos iterativos
+        max_iter: Máximo de iteraciones para métodos iterativos
+        initial_guess: Vector inicial para métodos iterativos
+        
+    Returns:
+        dict: Diccionario con los resultados del método
+    """
+    # Asegurar que A y b sean arrays de NumPy
+    A = np.array(A, dtype=float)
+    b = np.array(b, dtype=float)
+    
+    # Seleccionar el método adecuado
+    if method == "gauss":
+        return gaussian_elimination(A, b)
+    elif method == "lu":
+        return lu_decomposition(A, b)
+    elif method == "jacobi":
+        if initial_guess is None:
+            initial_guess = np.zeros_like(b)
+        return jacobi_method(A, b, initial_guess, tol, max_iter)
+    elif method == "gauss_seidel":
+        if initial_guess is None:
+            initial_guess = np.zeros_like(b)
+        return gauss_seidel_method(A, b, initial_guess, tol, max_iter)
+    else:
+        raise ValueError(f"Método '{method}' no implementado. Opciones válidas: gauss, lu, jacobi, gauss_seidel")
 
 # Example Usage (for testing)
 if __name__ == '__main__':

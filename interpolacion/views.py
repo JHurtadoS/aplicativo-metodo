@@ -2,12 +2,13 @@ from django.shortcuts import render, redirect
 from django.views import View
 from .forms import InterpolacionForm
 from . import algorithms
-# from core.utils import add_to_history # Assuming a history utility exists
+from datetime import datetime
+from core.utils import save_to_history  # Importar función de historial
 
 # Mapping from form choice value to algorithm function
 METHOD_MAP = {
-    'lagrange': algorithms.lagrange_interpolation,
-    'newton': algorithms.newton_interpolation,
+    'lagrange': algorithms.lagrange,
+    'newton': algorithms.newton,
     'linear_regression': algorithms.linear_regression,
     # 'polynomial_regression': algorithms.polynomial_regression, # Add if implemented
 }
@@ -20,39 +21,89 @@ THEORY_TEXT = {
 
 class InterpolacionView(View):
     template_name = 'interpolacion/interpolacion_form.html'
-
+    
     def get(self, request, *args, **kwargs):
         form = InterpolacionForm()
-        return render(request, self.template_name, {'form': form})
-
+        context = {'form': form}
+        return render(request, self.template_name, context)
+    
     def post(self, request, *args, **kwargs):
         form = InterpolacionForm(request.POST)
         context = {'form': form}
-
+        
         if form.is_valid():
-            points = form.cleaned_data['points']
+            # Get points data
+            points_input = form.cleaned_data['points']
             method_key = form.cleaned_data['method']
-
-            # Get the corresponding algorithm function
-            algorithm_func = METHOD_MAP.get(method_key)
-
-            if algorithm_func:
-                # Call the algorithm
-                result_data = algorithm_func(points)
-
-                # Add results to context
-                context['results'] = result_data
-                context['theory'] = THEORY_TEXT.get(method_key, "")
-
-                # Add to history (if history feature is implemented)
-                # if 'error' not in result_data:
-                #     add_to_history(request, 'interpolacion', method_key, {'points': points}, result_data)
-
-            else:
-                # Should not happen if form choices and METHOD_MAP match
-                context['error_message'] = f"Método '{method_key}' no implementado."
-
-        # Re-render the page with form (potentially with errors) and results/error
+            
+            # Parse points
+            try:
+                points = []
+                for line in points_input.strip().split('\n'):
+                    if line.strip():
+                        x, y = map(float, line.strip().split(','))
+                        points.append((x, y))
+                
+                if len(points) < 2:
+                    raise ValueError("Se requieren al menos 2 puntos para interpolación/regresión")
+                
+                # Check if method exists
+                if method_key in METHOD_MAP:
+                    algorithm_func = METHOD_MAP[method_key]
+                    
+                    # Special case for Lagrange
+                    if method_key == 'lagrange' and 'solver' in form.cleaned_data:
+                        solver = form.cleaned_data['solver']
+                        
+                        try:
+                            # Usar el método modernizado que recibe el solver como parámetro
+                            result_data = algorithm_func(points, solver=solver)
+                            
+                            # Guardar en historial
+                            input_data = {
+                                'puntos': [(float(p[0]), float(p[1])) for p in points],
+                                'solver': solver
+                            }
+                            save_to_history(
+                                request, 
+                                'interpolacion', 
+                                method_key, 
+                                input_data, 
+                                result_data
+                            )
+                            
+                            # Add results to context
+                            context['results'] = result_data
+                            context['theory'] = THEORY_TEXT.get(method_key, "")
+                        except ValueError as e:
+                            context['error_message'] = str(e)
+                    else:
+                        # Para otros métodos, mantener comportamiento original
+                        try:
+                            result_data = algorithm_func(points)
+                            
+                            # Guardar en historial
+                            input_data = {
+                                'puntos': [(float(p[0]), float(p[1])) for p in points]
+                            }
+                            save_to_history(
+                                request, 
+                                'interpolacion', 
+                                method_key, 
+                                input_data, 
+                                result_data
+                            )
+                            
+                            context['results'] = result_data
+                            context['theory'] = THEORY_TEXT.get(method_key, "")
+                        except ValueError as e:
+                            context['error_message'] = str(e)
+                else:
+                    context['error_message'] = f"Método '{method_key}' no encontrado."
+            
+            except Exception as e:
+                context['error_message'] = f"Error al procesar los datos: {str(e)}"
+        
         return render(request, self.template_name, context)
 
 # Alias for clarity if needed, matching the URL name perhaps

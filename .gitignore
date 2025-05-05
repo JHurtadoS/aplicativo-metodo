@@ -52,3 +52,7 @@ ENV/
 *.tgz
 *.zip
 *.tar.gz
+
+# Static files
+static/img/
+static/pdfs/
