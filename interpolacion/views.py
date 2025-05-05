@@ -32,18 +32,13 @@ class InterpolacionView(View):
         context = {'form': form}
         
         if form.is_valid():
-            # Get points data
-            points_input = form.cleaned_data['points']
+            # Get points data - ya procesados por el método clean_points
+            points = form.cleaned_data['points']  # Esto ya es una lista de tuplas [(x1,y1), (x2,y2), ...]
             method_key = form.cleaned_data['method']
             
-            # Parse points
+            # No necesitamos procesar los puntos nuevamente
             try:
-                points = []
-                for line in points_input.strip().split('\n'):
-                    if line.strip():
-                        x, y = map(float, line.strip().split(','))
-                        points.append((x, y))
-                
+                # Verificar que hay suficientes puntos
                 if len(points) < 2:
                     raise ValueError("Se requieren al menos 2 puntos para interpolación/regresión")
                 

@@ -28,8 +28,17 @@ def generate_operation_pdf(result_data, operation_type):
     filename = f"{operation_type}_{timestamp}_{file_uuid}.pdf"
     
     # Preparar el contexto para la plantilla
+    # Convertir result_data a un diccionario si es necesario
+    result_dict = {}
+    if hasattr(result_data, '__dict__'):
+        # Si result_data es un objeto con atributos, convertirlo a dict
+        result_dict = {key: value for key, value in result_data.__dict__.items()}
+    elif isinstance(result_data, dict):
+        # Si ya es un dict, usarlo directamente
+        result_dict = result_data
+    
     context = {
-        'result': result_data,
+        'result': result_dict,
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'operation_type': operation_type
     }
@@ -78,6 +87,13 @@ def save_to_history(request, operation_type, method, input_data, result_data):
     if 'historial' not in request.session:
         request.session['historial'] = []
     
+    # Obtener la ruta del gráfico, de forma segura para diferentes tipos de objetos (dict o objeto personalizado)
+    grafico_path = None
+    if hasattr(result_data, 'grafico_path'):
+        grafico_path = result_data.grafico_path
+    elif isinstance(result_data, dict) and 'grafico_path' in result_data:
+        grafico_path = result_data['grafico_path']
+    
     # Crear entrada de historial
     historial_item = {
         'tipo': operation_type,
@@ -85,7 +101,7 @@ def save_to_history(request, operation_type, method, input_data, result_data):
         'fecha': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'entrada': input_data,
         'resultado_resumen': _get_result_summary(result_data, operation_type),
-        'grafico_path': result_data.get('grafico_path', None),
+        'grafico_path': grafico_path,
         'pdf_path': pdf_path
     }
     

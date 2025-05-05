@@ -96,10 +96,13 @@ def lagrange(points: List[Tuple[float, float]], decimales: int = 6, solver: str 
         
         # Resolver el sistema lineal usando el solver de sistemas lineales
         steps.append(f"\n### Resolviendo el sistema lineal (Método: {solver})")
-        result = solve_system(A, b, solver)
+        result_dict = solve_system(A, b, solver)
         
         # Extraer los coeficientes de la solución
-        coefs = result.get('solution', [])
+        if 'error' in result_dict:
+            raise ValueError(f"Error al resolver el sistema: {result_dict['error']}")
+            
+        coefs = result_dict['solution'] if 'solution' in result_dict else []
         steps.append(f"**Coeficientes obtenidos:** {coefs}")
         
         # Construir el polinomio con SymPy
@@ -162,10 +165,13 @@ def newton(points: List[Tuple[float, float]], decimales: int = 6, solver: str = 
         
         # Resolver el sistema lineal usando el solver de sistemas lineales
         steps.append(f"\n### Resolviendo el sistema lineal (Método: {solver})")
-        result = solve_system(T, b, solver)
+        result_dict = solve_system(T, b, solver)
         
         # Extraer los coeficientes de la solución
-        coefs = result.get('solution', [])
+        if 'error' in result_dict:
+            raise ValueError(f"Error al resolver el sistema: {result_dict['error']}")
+            
+        coefs = result_dict['solution'] if 'solution' in result_dict else []
         steps.append(f"**Coeficientes de diferencias divididas:** {coefs}")
         
         # Construir el polinomio de Newton con SymPy
