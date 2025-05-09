@@ -3,6 +3,7 @@ from django import forms
 METHOD_CHOICES = [
     ('lagrange', 'Interpolación de Lagrange'),
     ('newton', 'Interpolación de Newton (Diferencias Divididas)'),
+    ('cubic_splines', 'Interpolación con Splines Cúbicos'),
     ('linear_regression', 'Regresión Lineal (Mínimos Cuadrados)'),
     # ('polynomial_regression', 'Regresión Polinomial (Mínimos Cuadrados)'), # Optional
 ]
@@ -59,10 +60,14 @@ class InterpolacionForm(forms.Form):
 
         # Check for duplicate x values for interpolation methods
         method = self.cleaned_data.get('method')
-        if method in ['lagrange', 'newton']:
+        if method in ['lagrange', 'newton', 'cubic_splines']:
             x_values = [p[0] for p in points_list]
             if len(x_values) != len(set(x_values)):
                 raise forms.ValidationError("Los métodos de interpolación requieren valores de 'x' únicos.")
+                
+        # Check minimum number of points for cubic splines
+        if method == 'cubic_splines' and len(points_list) < 3:
+            raise forms.ValidationError("Los splines cúbicos requieren al menos 3 puntos.")
 
         return points_list
 

@@ -10,6 +10,7 @@ from pathlib import Path
 from sistemas_lineales.algorithms import solve_system
 from core.utils import fix_nested_matrices
 from .builder import builder_vandermonde, builder_newton_triangular
+import re
 
 # Asegurar que el directorio de imágenes exista
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -71,7 +72,7 @@ def plot_points_curve(points: List[Tuple[float, float]], poly, uuid_str: Optiona
 
 def lagrange(points: List[Tuple[float, float]], decimales: int = 6, solver: str = "gauss") -> InterpResult:
     """Calcula el polinomio interpolante de Lagrange usando el solver indicado."""
-    steps = ["## Inicio: Interpolación de Lagrange (Usando Sistema de Ecuaciones)"]
+    steps = ["<div class='text-2xl font-bold text-blue-800 mt-6 mb-3'>Inicio: Interpolación de Lagrange (Usando Sistema de Ecuaciones)</div>"]
     try:
         # Validar entrada
         if len(points) < 2:
@@ -85,17 +86,17 @@ def lagrange(points: List[Tuple[float, float]], decimales: int = 6, solver: str 
             raise ValueError("Los valores de x deben ser únicos para la interpolación.")
         
         # Construir el sistema lineal usando el builder
-        steps.append(f"**Puntos de entrada:** {points}")
-        steps.append("\n### Construyendo el sistema lineal con matriz de Vandermonde")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Puntos de entrada:</span> {points}</div>")
+        steps.append("<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Construyendo el sistema lineal con matriz de Vandermonde</div>")
         A, b = builder_vandermonde(points)
         
-        steps.append(f"**Matriz de Vandermonde:**")
-        steps.append(f"```\n{A}\n```")
-        steps.append(f"**Vector de valores y:**")
-        steps.append(f"```\n{b}\n```")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Matriz de Vandermonde:</span></div>")
+        steps.append(f"<pre class='bg-gray-50 p-3 rounded border border-gray-200 overflow-auto text-sm'>{A}</pre>")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Vector de valores y:</span></div>")
+        steps.append(f"<pre class='bg-gray-50 p-3 rounded border border-gray-200 overflow-auto text-sm'>{b}</pre>")
         
         # Resolver el sistema lineal usando el solver de sistemas lineales
-        steps.append(f"\n### Resolviendo el sistema lineal (Método: {solver})")
+        steps.append(f"<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Resolviendo el sistema lineal (Método: {solver})</div>")
         result_dict = solve_system(A, b, solver)
         
         # Extraer los coeficientes de la solución
@@ -103,7 +104,7 @@ def lagrange(points: List[Tuple[float, float]], decimales: int = 6, solver: str 
             raise ValueError(f"Error al resolver el sistema: {result_dict['error']}")
             
         coefs = result_dict['solution'] if 'solution' in result_dict else []
-        steps.append(f"**Coeficientes obtenidos:** {coefs}")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Coeficientes obtenidos:</span> <code class='bg-gray-100 px-1 rounded'>{coefs}</code></div>")
         
         # Construir el polinomio con SymPy
         x = sp.symbols('x')
@@ -116,8 +117,18 @@ def lagrange(points: List[Tuple[float, float]], decimales: int = 6, solver: str 
         poly_tex = sp.latex(poly_simplified)
         # Corregir posibles problemas con matrices anidadas en el LaTeX
         poly_tex = fix_nested_matrices(poly_tex)
-        steps.append(f"\n### Polinomio Interpolante")
-        steps.append(f"$P(x) = {poly_tex}$")
+        # Mejoras para compatibilidad con KaTeX
+        poly_tex = poly_tex.replace(r"\dot", r"\cdot").replace(r"\left(", r"(").replace(r"\right)", r")")
+        
+        # Fix scientific notation with regex
+        # Replace scientific notation with better KaTeX formatting
+        # Replace \cdot 10^{-X} with \times 10^{-X}
+        poly_tex = re.sub(r"\\cdot\s*10\^\{-(\d+)\}", r" \\times 10^{-\1}", poly_tex)
+        # Replace \cdot 10^{X} with \times 10^{X}
+        poly_tex = re.sub(r"\\cdot\s*10\^\{(\d+)\}", r" \\times 10^{\1}", poly_tex)
+        
+        steps.append(f"<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Polinomio Interpolante</div>")
+        steps.append(f"<div class='bg-gray-50 p-3 my-2 rounded border border-gray-200'>$P(x) = {poly_tex}$</div>")
         
         # Generar la gráfica
         uuid_str = str(uuid.uuid4())
@@ -140,7 +151,7 @@ def lagrange(points: List[Tuple[float, float]], decimales: int = 6, solver: str 
 
 def newton(points: List[Tuple[float, float]], decimales: int = 6, solver: str = "gauss") -> InterpResult:
     """Calcula el polinomio interpolante de Newton (diferencias divididas)."""
-    steps = ["## Inicio: Interpolación de Newton (Usando Sistema Triangular)"]
+    steps = ["<div class='text-2xl font-bold text-blue-800 mt-6 mb-3'>Inicio: Interpolación de Newton (Usando Sistema Triangular)</div>"]
     try:
         # Validar entrada
         if len(points) < 2:
@@ -154,17 +165,17 @@ def newton(points: List[Tuple[float, float]], decimales: int = 6, solver: str = 
             raise ValueError("Los valores de x deben ser únicos para la interpolación.")
         
         # Construir el sistema lineal triangular
-        steps.append(f"**Puntos de entrada:** {points}")
-        steps.append("\n### Construyendo el sistema lineal triangular para Newton")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Puntos de entrada:</span> {points}</div>")
+        steps.append("<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Construyendo el sistema lineal triangular para Newton</div>")
         T, b = builder_newton_triangular(points)
         
-        steps.append(f"**Matriz triangular de Newton:**")
-        steps.append(f"```\n{T}\n```")
-        steps.append(f"**Vector de valores y:**")
-        steps.append(f"```\n{b}\n```")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Matriz triangular de Newton:</span></div>")
+        steps.append(f"<pre class='bg-gray-50 p-3 rounded border border-gray-200 overflow-auto text-sm'>{T}</pre>")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Vector de valores y:</span></div>")
+        steps.append(f"<pre class='bg-gray-50 p-3 rounded border border-gray-200 overflow-auto text-sm'>{b}</pre>")
         
         # Resolver el sistema lineal usando el solver de sistemas lineales
-        steps.append(f"\n### Resolviendo el sistema lineal (Método: {solver})")
+        steps.append(f"<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Resolviendo el sistema lineal (Método: {solver})</div>")
         result_dict = solve_system(T, b, solver)
         
         # Extraer los coeficientes de la solución
@@ -172,7 +183,7 @@ def newton(points: List[Tuple[float, float]], decimales: int = 6, solver: str = 
             raise ValueError(f"Error al resolver el sistema: {result_dict['error']}")
             
         coefs = result_dict['solution'] if 'solution' in result_dict else []
-        steps.append(f"**Coeficientes de diferencias divididas:** {coefs}")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Coeficientes de diferencias divididas:</span> <code class='bg-gray-100 px-1 rounded'>{coefs}</code></div>")
         
         # Construir el polinomio de Newton con SymPy
         x = sp.symbols('x')
@@ -188,8 +199,18 @@ def newton(points: List[Tuple[float, float]], decimales: int = 6, solver: str = 
         poly_tex = sp.latex(poly_simplified)
         # Corregir posibles problemas con matrices anidadas en el LaTeX
         poly_tex = fix_nested_matrices(poly_tex)
-        steps.append(f"\n### Polinomio Interpolante de Newton")
-        steps.append(f"$P(x) = {poly_tex}$")
+        # Mejoras para compatibilidad con KaTeX
+        poly_tex = poly_tex.replace(r"\dot", r"\cdot").replace(r"\left(", r"(").replace(r"\right)", r")")
+        
+        # Fix scientific notation with regex
+        # Replace scientific notation with better KaTeX formatting
+        # Replace \cdot 10^{-X} with \times 10^{-X}
+        poly_tex = re.sub(r"\\cdot\s*10\^\{-(\d+)\}", r" \\times 10^{-\1}", poly_tex)
+        # Replace \cdot 10^{X} with \times 10^{X}
+        poly_tex = re.sub(r"\\cdot\s*10\^\{(\d+)\}", r" \\times 10^{\1}", poly_tex)
+        
+        steps.append(f"<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Polinomio Interpolante de Newton</div>")
+        steps.append(f"<div class='bg-gray-50 p-3 my-2 rounded border border-gray-200'>$P(x) = {poly_tex}$</div>")
         
         # Generar la gráfica
         uuid_str = str(uuid.uuid4())
@@ -212,7 +233,7 @@ def newton(points: List[Tuple[float, float]], decimales: int = 6, solver: str = 
 
 def linear_regression(points: List[Tuple[float, float]]) -> Result:
     """Calcula la regresión lineal usando mínimos cuadrados."""
-    steps = ["## Inicio: Regresión Lineal (Mínimos Cuadrados)"]
+    steps = ["<div class='text-2xl font-bold text-blue-800 mt-6 mb-3'>Inicio: Regresión Lineal (Mínimos Cuadrados)</div>"]
     try:
         n = len(points)
         x_coords = np.array([p[0] for p in points])
@@ -221,9 +242,9 @@ def linear_regression(points: List[Tuple[float, float]]) -> Result:
         if n < 2:
             raise ValueError("Se necesitan al menos 2 puntos para la regresión.")
 
-        steps.append(f"**Número de puntos:** {n}")
-        steps.append(f"**Coordenadas x:** `{x_coords}`")
-        steps.append(f"**Coordenadas y:** `{y_coords}`")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Número de puntos:</span> {n}</div>")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Coordenadas x:</span> <code class='bg-gray-100 px-1 rounded'>{x_coords}</code></div>")
+        steps.append(f"<div class='my-2'><span class='font-semibold'>Coordenadas y:</span> <code class='bg-gray-100 px-1 rounded'>{y_coords}</code></div>")
 
         # Calculate sums needed for normal equations
         sum_x = np.sum(x_coords)
@@ -235,9 +256,9 @@ def linear_regression(points: List[Tuple[float, float]]) -> Result:
         slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x**2)
         intercept = (sum_y - slope * sum_x) / n
 
-        steps.append("\n### Calculando coeficientes con ecuaciones normales")
-        steps.append(f"- **Pendiente (a)**: `{slope:.6f}`")
-        steps.append(f"- **Intercepto (b)**: `{intercept:.6f}`")
+        steps.append("<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Calculando coeficientes con ecuaciones normales</div>")
+        steps.append(f"<div class='ml-3 my-1'><span class='font-medium text-blue-600'>Pendiente (a):</span> <code class='bg-gray-100 px-1 rounded'>{slope:.6f}</code></div>")
+        steps.append(f"<div class='ml-3 my-1'><span class='font-medium text-blue-600'>Intercepto (b):</span> <code class='bg-gray-100 px-1 rounded'>{intercept:.6f}</code></div>")
 
         # Build the polynomial with SymPy
         x = sp.symbols('x')
@@ -245,6 +266,15 @@ def linear_regression(points: List[Tuple[float, float]]) -> Result:
         poly_tex = sp.latex(poly)
         # Corregir posibles problemas con matrices anidadas en el LaTeX
         poly_tex = fix_nested_matrices(poly_tex)
+        # Mejoras para compatibilidad con KaTeX
+        poly_tex = poly_tex.replace(r"\dot", r"\cdot").replace(r"\left(", r"(").replace(r"\right)", r")")
+        
+        # Fix scientific notation with regex
+        # Replace scientific notation with better KaTeX formatting
+        # Replace \cdot 10^{-X} with \times 10^{-X}
+        poly_tex = re.sub(r"\\cdot\s*10\^\{-(\d+)\}", r" \\times 10^{-\1}", poly_tex)
+        # Replace \cdot 10^{X} with \times 10^{X}
+        poly_tex = re.sub(r"\\cdot\s*10\^\{(\d+)\}", r" \\times 10^{\1}", poly_tex)
         
         # Create regression function
         def regression_func(x_vals):
@@ -256,10 +286,11 @@ def linear_regression(points: List[Tuple[float, float]]) -> Result:
         ss_residual = np.sum((y_coords - y_pred)**2)
         r_squared = 1 - (ss_residual / ss_total)
         
-        steps.append(f"\n### Ecuación de la recta")
-        steps.append(f"$y = {slope:.6f}x + {intercept:.6f}$")
-        steps.append(f"\n### Bondad del ajuste")
-        steps.append(f"- **R²**: `{r_squared:.6f}`")
+        steps.append(f"<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Ecuación de la recta</div>")
+        steps.append(f"<div class='bg-gray-50 p-3 my-2 rounded border border-gray-200'>$y = {slope:.6f}x + {intercept:.6f}$</div>")
+        
+        steps.append(f"<div class='text-xl font-bold text-blue-700 mt-5 mb-2'>Bondad del ajuste</div>")
+        steps.append(f"<div class='ml-3 my-1'><span class='font-medium text-blue-600'>R²:</span> <code class='bg-gray-100 px-1 rounded'>{r_squared:.6f}</code></div>")
 
         # Generate plot
         uuid_str = str(uuid.uuid4())
@@ -291,7 +322,7 @@ def linear_regression(points: List[Tuple[float, float]]) -> Result:
             
             plot_path = os.path.join(STATIC_URL_IMG_PREFIX, filename).replace('\\', '/')
         except Exception as e:
-            steps.append(f"\n*Error al generar la gráfica: {e}*")
+            steps.append(f"<div class='text-red-600 italic mt-2'>Error al generar la gráfica: {e}</div>")
 
         result = Result(
             metodo="Regresión Lineal (Mínimos Cuadrados)",

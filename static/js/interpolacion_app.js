@@ -89,6 +89,7 @@
     const methods = [
       { value: 'lagrange', label: 'Interpolación de Lagrange' },
       { value: 'newton', label: 'Interpolación de Newton (Diferencias Divididas)' },
+      { value: 'cubic_splines', label: 'Interpolación con Splines Cúbicos' },
       { value: 'linear_regression', label: 'Regresión Lineal (Mínimos Cuadrados)' }
     ];
     
@@ -97,8 +98,31 @@
       { value: 'lu', label: 'Descomposición LU (Doolittle)' }
     ];
 
+    // Validar número de puntos para splines
+    const validateMethod = (selectedMethod) => {
+      if (selectedMethod === 'cubic_splines') {
+        const pointsCount = points.trim().split('\n').filter(line => line.trim()).length;
+        if (pointsCount < 3) {
+          alert('Los splines cúbicos requieren al menos 3 puntos.');
+          return false;
+        }
+      }
+      return true;
+    };
+
+    // Función para manejar el cambio de método
+    const handleMethodChange = (selectedMethod) => {
+      if (validateMethod(selectedMethod)) {
+        setMethod(selectedMethod);
+      }
+    };
+
     // Función para manejar el envío del formulario
     const handleSubmit = (e) => {
+      if (!validateMethod(method)) {
+        e.preventDefault();
+        return;
+      }
       setIsSubmitting(true);
       // No hacemos preventDefault, permitimos que el formulario se procese normalmente
     };
@@ -134,7 +158,7 @@
                   name: 'method',
                   value: option.value,
                   checked: method === option.value,
-                  onChange: () => setMethod(option.value),
+                  onChange: () => handleMethodChange(option.value),
                   className: 'mr-2'
                 }),
                 h('label', { 

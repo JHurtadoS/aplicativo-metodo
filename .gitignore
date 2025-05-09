@@ -56,3 +56,4 @@ ENV/
 # Static files
 static/img/
 static/pdfs/
+contexto/

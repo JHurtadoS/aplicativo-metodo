@@ -8,6 +8,17 @@
 <!-- Load Preact and Hooks as a single bundle instead of separate scripts -->
 <script src="https://cdn.jsdelivr.net/npm/preact/dist/preact.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/preact@10.10.0/hooks/dist/hooks.umd.js"></script>
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"
+    onload="renderMathInElement(document.body, {
+        delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false
+    });"></script>
 <script>
   // Ensure hooks are properly attached to window
   window.preact = preact;
@@ -62,16 +73,20 @@
 
                  <div class="mb-4">
                      <h3 class="text-lg font-semibold mb-2">Ecuación Resultante</h3>
-                     <div class="p-3 bg-gray-100 rounded overflow-x-auto">
-                         <code class="text-sm">
-                             {% if results.polinomio_tex %}
-                             $P(x) = {{ results.polinomio_tex }}$
-                             {% elif results.line_latex %}
-                             $y = {{ results.line_latex }}$
-                             {% else %}
-                             No disponible.
-                             {% endif %}
-                         </code>
+                     <div class="p-3 bg-gray-100 rounded overflow-x-auto" style="max-width: 100%;">
+                         <div class="katex-display-wrapper" style="overflow-x: auto; overflow-y: hidden;">
+                            {% if results.polinomio_tex %}
+                                {% if results.metodo == "Interpolación con Splines Cúbicos" %}
+                                    $$ S(x) = {{ results.polinomio_tex }} $$
+                                {% else %}
+                                    $$ P(x) = {{ results.polinomio_tex }} $$
+                                {% endif %}
+                            {% elif results.line_latex %}
+                                $$ y = {{ results.line_latex }} $$
+                            {% else %}
+                                No disponible.
+                            {% endif %}
+                         </div>
                      </div>
                  </div>
 
@@ -125,16 +140,7 @@
     {% endif %}
 </div>
 
-{# Include MathJax for LaTeX rendering #}
-<script type="text/javascript" async
-  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
-</script>
-<script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-    tex2jax: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}
-  });
-</script>
-
+{# Include JavaScript to re-render KaTeX after dynamic content changes #}
 <script>
 // Función para exportar resultado como JSON
 function exportJSON() {
@@ -142,7 +148,13 @@ function exportJSON() {
         metodo: "{{ results.metodo|escapejs }}",
         fecha: new Date().toISOString(),
         coeficientes: {{ results.coeficientes|safe|default:'[]' }},
-        polinomio: "{{ results.polinomio_tex|escapejs|default:'' }}"
+        // Para splines, results.polinomio_tex no incluye S(x)=, lo añadimos aquí para la exportación si es necesario
+        // o decidimos si el JSON solo lleva la parte de \begin{cases}
+        polinomio: (
+            "{{ results.metodo|escapejs }}" === "Interpolación con Splines Cúbicos" 
+            ? "S(x) = " + "{{ results.polinomio_tex|escapejs|default:'' }}" 
+            : "P(x) = " + "{{ results.polinomio_tex|escapejs|default:'' }}"
+        )
     };
     
     const dataStr = JSON.stringify(data, null, 2);
@@ -155,5 +167,32 @@ function exportJSON() {
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
 }
+
+// Re-render math expressions when results are loaded
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false,
+            displayMode: true,
+            output: 'html',
+            trust: true,
+            macros: {
+                "\\": "\\",
+            }
+        });
+        
+        // Add custom styling for KaTeX
+        document.querySelectorAll('.katex-display').forEach(el => {
+            el.style.maxWidth = '100%';
+            el.style.overflowX = 'auto';
+            el.style.overflowY = 'hidden';
+            el.style.padding = '10px 0';
+        });
+    }
+});
 </script>
 {% endblock %} 

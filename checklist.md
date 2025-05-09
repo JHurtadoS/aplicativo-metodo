@@ -52,23 +52,26 @@ Based on the planning document (`contexto metodo paso por paso.txt`) and the cur
 
 -   [x] Create Django App (`interpolacion`)
 -   [x] Basic App Files (`views.py`, `urls.py`, `models.py`, `templates/interpolacion/`) (Files created)
--   [ ] **Input Form:**
+-   [x] **Input Form:**
     -   [x] Create Django Form (`forms.py`) for points (x, y), method selection (Lagrange, Newton, Linear Regression, Polynomial Regression?).
     -   [x] Implement view (`views.py`) to handle GET/POST.
     -   [x] Create template (`templates/interpolacion/interpolacion_form.html`) for the form.
--   [ ] **Calculation Logic:**
+-   [x] **Calculation Logic:**
     -   [x] Implement Lagrange Interpolation function (NumPy/SymPy).
     -   [x] Implement Newton Interpolation (divided differences) function (NumPy/SymPy).
     -   [x] Implement Linear Regression (least squares) function (NumPy).
+    -   [x] Implement Cubic Splines function (NumPy/SymPy).
     -   [ ] (Optional) Implement Polynomial Regression function.
     -   [x] Integrate SymPy to display resulting polynomial formulas.
--   [ ] **Step-by-Step Output:**
+-   [x] **Step-by-Step Output:**
     -   [x] Show Lagrange basis polynomials / Newton divided difference table.
     -   [x] Show steps for calculating regression coefficients.
--   [ ] **Results & Visualization:**
+    -   [x] Show Spline coefficients for each interval.
+-   [x] **Results & Visualization:**
     -   [x] Display final polynomial/line equation.
     -   [x] Integrate Matplotlib to plot points and the resulting curve/line.
--   [ ] **Theoretical Explanation:**
+    -   [x] Plot Splines with different colors for each interval.
+-   [x] **Theoretical Explanation:**
     -   [x] Add brief text descriptions of methods in the template.
 -   [ ] **Export Integration:**
     -   [ ] Link results view to the export function (including graph).

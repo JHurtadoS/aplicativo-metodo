@@ -16,6 +16,11 @@ from .algorithms.builder import (
     builder_newton_triangular
 )
 
+from .algorithms.splines import (
+    builder_splines_system,
+    natural_cubic_splines
+)
+
 # Re-exportar para mantener compatibilidad con código existente
 __all__ = [
     'lagrange',
@@ -25,7 +30,9 @@ __all__ = [
     'Result',
     'InterpResult',
     'builder_vandermonde',
-    'builder_newton_triangular'
+    'builder_newton_triangular',
+    'builder_splines_system',
+    'natural_cubic_splines'
 ]
 
 # Para compatibilidad con el código antiguo, usamos alias a las funciones refactorizadas
