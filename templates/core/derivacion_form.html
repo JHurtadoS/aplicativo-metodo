@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Derivación Numérica - Métodos Numéricos{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Derivación Numérica</h1>
+            <p class="text-gray-600">Cálculo de derivadas usando diferencias finitas</p>
+        </div>
+
+        <!-- Wizard Steps Indicator -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center text-indigo-600">
+                    <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-medium">1</div>
+                    <span class="ml-2 text-sm font-medium">Ingreso de datos</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-200"></div>
+                <div class="flex items-center text-gray-400">
+                    <div class="w-8 h-8 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center text-sm font-medium">2</div>
+                    <span class="ml-2 text-sm">Selección de método</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-gray-200"></div>
+                <div class="flex items-center text-gray-400">
+                    <div class="w-8 h-8 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center text-sm font-medium">3</div>
+                    <span class="ml-2 text-sm">Resultados</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-md bg-red-50 border border-red-200">
+                    <div class="flex">
+                        <div class="text-red-800">{{ message }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Form -->
+        <form method="post" class="bg-white shadow-lg rounded-lg p-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Función -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.function.label }}
+                    </label>
+                    {{ form.function }}
+                    {% if form.function.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.function.help_text }}</p>
+                    {% endif %}
+                    {% if form.function.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.function.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Punto x0 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.x0.label }}
+                    </label>
+                    {{ form.x0 }}
+                    {% if form.x0.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.x0.help_text }}</p>
+                    {% endif %}
+                    {% if form.x0.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.x0.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Paso h -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.h.label }}
+                    </label>
+                    {{ form.h }}
+                    {% if form.h.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.h.help_text }}</p>
+                    {% endif %}
+                    {% if form.h.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.h.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Método -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        {{ form.method.label }}
+                    </label>
+                    <div class="space-y-3">
+                        {% for choice in form.method %}
+                            <div class="flex items-start">
+                                {{ choice.tag }}
+                                <div class="ml-3">
+                                    <label for="{{ choice.id_for_label }}" class="text-sm font-medium text-gray-700">
+                                        {{ choice.choice_label }}
+                                    </label>
+                                    {% if choice.choice_value == 'central' %}
+                                        <p class="text-xs text-green-600">✓ Más preciso para primera derivada</p>
+                                    {% elif choice.choice_value == 'forward' %}
+                                        <p class="text-xs text-amber-600">⚠ Método básico - menor precisión</p>
+                                    {% elif choice.choice_value == 'backward' %}
+                                        <p class="text-xs text-amber-600">⚠ Método básico - menor precisión</p>
+                                    {% elif choice.choice_value == 'second_derivative' %}
+                                        <p class="text-xs text-blue-600">📈 Calcula segunda derivada - curvatura</p>
+                                    {% elif choice.choice_value == 'five_point' %}
+                                        <p class="text-xs text-green-600">🎯 Alta precisión para segunda derivada</p>
+                                    {% elif choice.choice_value == 'richardson' %}
+                                        <p class="text-xs text-purple-600">🔬 Máxima precisión - elimina error dominante</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.method.help_text %}
+                        <p class="mt-2 text-sm text-gray-500">{{ form.method.help_text }}</p>
+                    {% endif %}
+                    {% if form.method.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.method.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="mt-8 flex justify-between">
+                <a href="{% url 'index' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                    Volver al menú
+                </a>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded">
+                    Calcular Derivada →
+                </button>
+            </div>
+        </form>
+
+        <!-- Examples -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 class="text-sm font-medium text-blue-800 mb-2">Ejemplos de funciones:</h3>
+            <ul class="text-sm text-blue-700 space-y-1">
+                <li><code>x**2 + 3*x + 1</code> - Polinomio cuadrático</li>
+                <li><code>sin(x)</code> - Función seno</li>
+                <li><code>exp(x)</code> - Función exponencial</li>
+                <li><code>log(x)</code> - Logaritmo natural</li>
+                <li><code>x**3 - 2*x**2 + x</code> - Polinomio cúbico</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %} 

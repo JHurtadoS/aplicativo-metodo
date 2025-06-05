@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDO - Resultado</title>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Resultado de Ecuación Diferencial Ordinaria</h1>
+            <p>Fecha de cálculo: {{ timestamp }}</p>
+        </header>
+        
+        <section>
+            <h2>Método: {{ result.metodo|title }}</h2>
+            
+            <div>
+                <h3>Datos de entrada</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parámetro</th>
+                            <th>Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>EDO</td>
+                            <td>dy/dt = {{ result.entrada.function }}</td>
+                        </tr>
+                        <tr>
+                            <td>Condición inicial t₀</td>
+                            <td>{{ result.entrada.t0 }}</td>
+                        </tr>
+                        <tr>
+                            <td>Condición inicial y₀</td>
+                            <td>{{ result.entrada.y0 }}</td>
+                        </tr>
+                        <tr>
+                            <td>Tamaño de paso (h)</td>
+                            <td>{{ result.entrada.h }}</td>
+                        </tr>
+                        <tr>
+                            <td>Número de pasos</td>
+                            <td>{{ result.entrada.n_steps }}</td>
+                        </tr>
+                        <tr>
+                            <td>Rango total</td>
+                            <td>[{{ result.entrada.t0 }}, {{ result.detalles.final_time|floatformat:4 }}]</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div>
+                <h3>Resultado Final</h3>
+                <p><strong>Valor final: y({{ result.detalles.final_time|floatformat:4 }}) ≈ {{ result.valor|floatformat:6 }}</strong></p>
+                <p>Condiciones iniciales: y({{ result.entrada.t0 }}) = {{ result.entrada.y0 }}</p>
+                
+                {% if result.detalles.expression %}
+                <p>EDO resuelta: dy/dt = {{ result.detalles.expression }}</p>
+                {% endif %}
+            </div>
+            
+            {% if result.grafico_path %}
+            <div>
+                <h3>Visualización Gráfica</h3>
+                <img src="{{ STATIC_URL }}{{ result.grafico_path }}" alt="Gráfica de la solución EDO">
+            </div>
+            {% endif %}
+            
+            <div>
+                <h3>Pasos del Cálculo</h3>
+                <div class="steps">
+                    {% for paso in result.pasos %}
+                    <div style="margin-bottom: 10px;">
+                        <h4>Paso {{ forloop.counter }}: {{ paso.descripcion }}</h4>
+                        <p style="font-family: monospace; background-color: #f5f5f5; padding: 5px;">{{ paso.calculo }}</p>
+                        {% if paso.t_val and paso.y_val %}
+                        <p>t = {{ paso.t_val|floatformat:4 }}, y = {{ paso.y_val|floatformat:6 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div>
+                <h3>Información del Método</h3>
+                {% if result.metodo == 'euler' %}
+                <div>
+                    <p><strong>Método de Euler:</strong></p>
+                    <p>Método explícito de primer orden para resolver EDOs</p>
+                    <p>Fórmula: y_{n+1} = y_n + h × f(t_n, y_n)</p>
+                    <p>Error de truncamiento local: O(h²)</p>
+                    <p>Error global: O(h)</p>
+                    <p>Es el método más simple pero también el menos preciso</p>
+                </div>
+                {% elif result.metodo == 'rk4' %}
+                <div>
+                    <p><strong>Método Runge-Kutta de 4to orden (RK4):</strong></p>
+                    <p>Método explícito de cuarto orden para resolver EDOs</p>
+                    <p>Utiliza cuatro evaluaciones de la función por paso:</p>
+                    <p>k₁ = h × f(t_n, y_n)</p>
+                    <p>k₂ = h × f(t_n + h/2, y_n + k₁/2)</p>
+                    <p>k₃ = h × f(t_n + h/2, y_n + k₂/2)</p>
+                    <p>k₄ = h × f(t_n + h, y_n + k₃)</p>
+                    <p>y_{n+1} = y_n + (k₁ + 2k₂ + 2k₃ + k₄)/6</p>
+                    <p>Error de truncamiento local: O(h⁵)</p>
+                    <p>Error global: O(h⁴)</p>
+                    <p>Más preciso que Euler pero requiere más cálculos</p>
+                </div>
+                {% endif %}
+                
+                <div style="margin-top: 15px;">
+                    <h4>Notas importantes:</h4>
+                    <ul>
+                        <li>El tamaño de paso h debe ser suficientemente pequeño para garantizar estabilidad</li>
+                        <li>Para EDOs rígidas, pueden requerirse métodos implícitos</li>
+                        <li>La precisión depende tanto del método como del tamaño de paso</li>
+                        <li>Siempre verificar la convergencia reduciendo h</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
+        <footer class="footer">
+            <p>App de Métodos Numéricos - Universidad Minuto de Dios</p>
+            <p>Documento generado automáticamente</p>
+        </footer>
+    </div>
+</body>
+</html> 

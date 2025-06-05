@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Resultado - Derivación Numérica{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Derivación Numérica - Resultados</h1>
+            <p class="text-gray-600">Método: {{ result.metodo|title }}</p>
+        </div>
+
+        <!-- Wizard Steps Indicator -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center text-green-600">
+                    <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">✓</div>
+                    <span class="ml-2 text-sm font-medium">Ingreso de datos</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-green-600"></div>
+                <div class="flex items-center text-green-600">
+                    <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">✓</div>
+                    <span class="ml-2 text-sm font-medium">Selección de método</span>
+                </div>
+                <div class="flex-1 h-0.5 bg-green-600"></div>
+                <div class="flex items-center text-green-600">
+                    <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium">3</div>
+                    <span class="ml-2 text-sm font-medium">Resultados</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Resumen y Resultado -->
+            <div class="space-y-6">
+                <!-- Datos de Entrada -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Datos de Entrada</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Función:</span>
+                            <code class="bg-gray-100 px-2 py-1 rounded">f(x) = {{ result.entrada.function }}</code>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Punto x₀:</span>
+                            <span class="font-mono">{{ result.entrada.x0 }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Paso h:</span>
+                            <span class="font-mono">{{ result.entrada.h }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Método:</span>
+                            <span class="capitalize">{{ result.metodo|title }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado Final -->
+                <div class="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold text-indigo-800 mb-4">Resultado Final</h2>
+                    <div class="text-center">
+                        {% if result.metodo in 'second_derivative,five_point' %}
+                        <div class="text-3xl font-bold text-indigo-600 mb-2">
+                            f''({{ result.entrada.x0 }}) ≈ {{ result.valor|floatformat:6 }}
+                        </div>
+                        {% else %}
+                        <div class="text-3xl font-bold text-indigo-600 mb-2">
+                            f'({{ result.entrada.x0 }}) ≈ {{ result.valor|floatformat:6 }}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Información de Error Mejorada -->
+                        {% if result.detalles.error_info %}
+                        <div class="mt-4 space-y-2">
+                            {% if result.detalles.error_info.tipo %}
+                            <div class="text-sm font-medium text-indigo-700">
+                                {{ result.detalles.error_info.tipo }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if result.detalles.error_info.exact_value %}
+                            <div class="text-sm text-indigo-600">
+                                Valor exacto: {{ result.detalles.error_info.exact_value|floatformat:8 }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if result.detalles.error_info.absolute_error %}
+                            <div class="text-sm text-indigo-600">
+                                Error absoluto: {{ result.detalles.error_info.absolute_error|floatformat:8 }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if result.detalles.error_info.relative_error and result.detalles.error_info.relative_error != 'inf' %}
+                            <div class="text-sm text-indigo-600">
+                                Error relativo: {{ result.detalles.error_info.relative_error|floatformat:6 }}%
+                            </div>
+                            {% endif %}
+                            
+                            {% if result.detalles.error_info.curvature_error %}
+                            <div class="text-sm text-indigo-600">
+                                Error de curvatura: {{ result.detalles.error_info.curvature_error|floatformat:8 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% elif result.error %}
+                        <div class="text-sm text-indigo-600">
+                            Error estimado: {{ result.error|floatformat:8 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Pasos del Cálculo -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Pasos del Cálculo</h2>
+                    <div class="space-y-3">
+                        {% for paso in result.pasos %}
+                        <div class="border-l-4 border-indigo-200 pl-4">
+                            <h4 class="font-medium text-gray-800">{{ paso.descripcion }}</h4>
+                            <code class="text-sm text-gray-600 bg-gray-50 p-2 rounded block mt-1">{{ paso.calculo }}</code>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Exportación -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Exportar Resultados</h2>
+                    <div class="flex space-x-4">
+                        <button onclick="exportTXT()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            📄 Descargar TXT
+                        </button>
+                        <button onclick="exportPDF()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                            📑 Descargar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico -->
+            <div class="space-y-6">
+                {% if result.grafico_path %}
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Visualización Gráfica</h2>
+                    <div class="text-center">
+                        <img src="/static/{{ result.grafico_path }}" alt="Gráfico de derivación numérica" class="max-w-full h-auto mx-auto rounded">
+                    </div>
+                    <p class="text-sm text-gray-600 mt-2 text-center">
+                        Representación gráfica del método {{ result.metodo|title }}
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Información del Método -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Información del Método</h2>
+                    {% if result.metodo == 'forward' %}
+                    <div class="space-y-2">
+                        <p><strong>Diferencia hacia adelante:</strong></p>
+                        <p class="text-sm text-gray-600">f'(x₀) ≈ (f(x₀+h) - f(x₀))/h</p>
+                        <p class="text-sm text-gray-600">Error de truncamiento: O(h)</p>
+                        <p class="text-sm text-amber-600">⚠ Método de primer orden</p>
+                    </div>
+                    {% elif result.metodo == 'backward' %}
+                    <div class="space-y-2">
+                        <p><strong>Diferencia hacia atrás:</strong></p>
+                        <p class="text-sm text-gray-600">f'(x₀) ≈ (f(x₀) - f(x₀-h))/h</p>
+                        <p class="text-sm text-gray-600">Error de truncamiento: O(h)</p>
+                        <p class="text-sm text-amber-600">⚠ Método de primer orden</p>
+                    </div>
+                    {% elif result.metodo == 'central' %}
+                    <div class="space-y-2">
+                        <p><strong>Diferencia central:</strong></p>
+                        <p class="text-sm text-gray-600">f'(x₀) ≈ (f(x₀+h) - f(x₀-h))/(2h)</p>
+                        <p class="text-sm text-gray-600">Error de truncamiento: O(h²)</p>
+                        <p class="text-sm text-green-600">✓ Método de segundo orden - Más preciso</p>
+                    </div>
+                    {% elif result.metodo == 'second_derivative' %}
+                    <div class="space-y-2">
+                        <p><strong>Segunda derivada central:</strong></p>
+                        <p class="text-sm text-gray-600">f''(x₀) ≈ (f(x₀+h) - 2f(x₀) + f(x₀-h))/h²</p>
+                        <p class="text-sm text-gray-600">Error de truncamiento: O(h²)</p>
+                        <p class="text-sm text-blue-600">📈 Calcula la curvatura de la función</p>
+                    </div>
+                    {% elif result.metodo == 'five_point' %}
+                    <div class="space-y-2">
+                        <p><strong>Segunda derivada 5 puntos:</strong></p>
+                        <p class="text-sm text-gray-600">f''(x₀) ≈ (-f(x₀-2h) + 16f(x₀-h) - 30f(x₀) + 16f(x₀+h) - f(x₀+2h))/(12h²)</p>
+                        <p class="text-sm text-gray-600">Error de truncamiento: O(h⁴)</p>
+                        <p class="text-sm text-green-600">✓ Método de alta precisión para segunda derivada</p>
+                    </div>
+                    {% elif result.metodo == 'richardson' %}
+                    <div class="space-y-2">
+                        <p><strong>Extrapolación de Richardson:</strong></p>
+                        <p class="text-sm text-gray-600">R = (4·D(h/2) - D(h))/3</p>
+                        <p class="text-sm text-gray-600">Error de truncamiento: O(h⁴)</p>
+                        <p class="text-sm text-green-600">✓ Combina múltiples approximaciones para mayor precisión</p>
+                        <p class="text-sm text-blue-600">🔬 Elimina el término dominante del error</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Navegación -->
+        <div class="mt-8 flex justify-between">
+            <a href="{% url 'derivacion_form' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                ← Nueva Derivada
+            </a>
+            <a href="{% url 'index' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+                Volver al Menú Principal
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportTXT() {
+    const content = `DERIVACIÓN NUMÉRICA - RESULTADOS
+=====================================
+
+Función: f(x) = {{ result.entrada.function }}
+Punto: x₀ = {{ result.entrada.x0 }}
+Paso: h = {{ result.entrada.h }}
+Método: {{ result.metodo|title }}
+
+RESULTADO FINAL:
+f'({{ result.entrada.x0 }}) ≈ {{ result.valor|floatformat:8 }}
+{% if result.error %}Error estimado: {{ result.error|floatformat:8 }}{% endif %}
+
+PASOS DEL CÁLCULO:
+{% for paso in result.pasos %}{{ forloop.counter }}. {{ paso.descripcion }}
+   {{ paso.calculo }}
+{% endfor %}
+
+Generado el: {{ "now"|date:"d/m/Y H:i:s" }}
+`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'derivacion_numerica_{{ result.metodo }}.txt';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
+function exportPDF() {
+    // Implementar exportación PDF usando el endpoint del servidor
+    window.open('/pdf/derivacion_{{ result.metodo }}_resultado.pdf', '_blank');
+}
+</script>
+{% endblock %} 

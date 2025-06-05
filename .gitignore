@@ -54,6 +54,8 @@ ENV/
 *.tar.gz
 
 # Static files
+
 static/img/
 static/pdfs/
 contexto/
+static/images/

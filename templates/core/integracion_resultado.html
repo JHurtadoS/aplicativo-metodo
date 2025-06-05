@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Resultado - Integración Numérica{% endblock %}
+
+{% block extra_head %}
+<!-- KaTeX for math rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iXGOixntILdUW9XmUC6+HX0sLNAK3q71HotJqlAn" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpW21h6RZv/phavutF+AuVYrr+dA8xD9zs6FwLpaCct6O9ctzYFfFr4dgmgccOTx" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"
+    onload="renderMathInElement(document.body);"></script>
+
+<style>
+/* KaTeX styling improvements */
+.katex-display {
+    margin: 1em 0;
+    text-align: center;
+}
+
+.katex {
+    font-size: 1.1em;
+}
+
+.step-item .katex {
+    font-size: 1em;
+}
+
+.step-calculation {
+    background-color: #f8fafc;
+    border-left: 4px solid #4f46e5;
+    padding: 12px 16px;
+    margin: 8px 0;
+    border-radius: 0 6px 6px 0;
+    font-family: 'Courier New', monospace;
+    line-height: 1.6;
+    overflow-x: auto;
+}
+
+.step-description {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Integración Numérica - Resultados</h1>
+            <p class="text-gray-600">Método: {{ result.metodo|title }}</p>
+        </div>
+
+        <!-- Resultado y Gráfico arriba en dos columnas -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Resultado Final -->
+            <div class="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                <h2 class="text-xl font-semibold text-green-800 mb-4">Resultado Final</h2>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600 mb-2">
+                        $\int f(x)dx \approx {{ result.valor|floatformat:6 }}$
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        Intervalo: [{{ result.entrada.a }}, {{ result.entrada.b }}] con {{ result.entrada.n }} subintervalos
+                    </div>
+                    
+                    <!-- Información de Error Mejorada -->
+                    {% if result.detalles.error_info %}
+                    <div class="mt-4 space-y-2">
+                        {% if result.detalles.error_info.tipo %}
+                        <div class="text-sm font-medium text-green-700">
+                            {{ result.detalles.error_info.tipo }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if result.detalles.error_info.exact_value %}
+                        <div class="text-sm text-green-600">
+                            Valor exacto: {{ result.detalles.error_info.exact_value|floatformat:8 }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if result.detalles.error_info.absolute_error %}
+                        <div class="text-sm text-green-600">
+                            Error absoluto: {{ result.detalles.error_info.absolute_error|floatformat:8 }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if result.detalles.error_info.relative_error and result.detalles.error_info.relative_error != 'inf' %}
+                        <div class="text-sm text-green-600">
+                            Error relativo: {{ result.detalles.error_info.relative_error|floatformat:6 }}%
+                        </div>
+                        {% endif %}
+                        
+                        {% if result.detalles.error_info.theoretical_error %}
+                        <div class="text-sm text-blue-600">
+                            Error teórico estimado: {{ result.detalles.error_info.theoretical_error|floatformat:8 }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if result.detalles.error_info.order %}
+                        <div class="text-sm text-purple-600">
+                            Orden de convergencia: {{ result.detalles.error_info.order }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% elif result.error %}
+                    <div class="text-sm text-green-600 mt-2">
+                        Error vs. solución exacta: {{ result.error|floatformat:8 }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Gráfico -->
+            {% if result.grafico_path %}
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Visualización</h2>
+                <img src="/static/{{ result.grafico_path }}" alt="Gráfico de integración" class="max-w-full h-auto mx-auto rounded">
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pasos del Cálculo ocupando todo el ancho -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Pasos Detallados del Cálculo</h2>
+            <div class="space-y-4 max-h-96 overflow-y-auto">
+                {% for paso in result.pasos %}
+                <div class="step-item">
+                    <div class="step-description">{{ paso.descripcion }}</div>
+                    <div class="step-calculation">{{ paso.calculo|safe }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-between">
+            <a href="{% url 'integracion_form' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                ← Nueva Integral
+            </a>
+            <a href="{% url 'index' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+                Volver al Menú Principal
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuración de KaTeX
+    const katexOptions = {
+        delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true,
+        output: 'html'
+    };
+    
+    // Renderizar matemáticas después de cargar
+    setTimeout(() => {
+        try {
+            renderMathInElement(document.body, katexOptions);
+            console.log("KaTeX rendering completed for integration results");
+            
+            // Re-renderizar elementos específicos después de un breve delay
+            setTimeout(() => {
+                const stepItems = document.querySelectorAll('.step-item');
+                stepItems.forEach(el => {
+                    if (el.innerHTML.includes('$')) {
+                        renderMathInElement(el, katexOptions);
+                    }
+                });
+            }, 200);
+        } catch (error) {
+            console.error("KaTeX rendering error:", error);
+        }
+    }, 100);
+});
+</script>
+{% endblock %} 

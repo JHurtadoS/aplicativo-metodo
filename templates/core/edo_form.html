@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Ecuaciones Diferenciales - Métodos Numéricos{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Ecuaciones Diferenciales Ordinarias</h1>
+            <p class="text-gray-600">Resolución numérica de EDOs usando Euler y Runge-Kutta</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-md bg-red-50 border border-red-200">
+                    <div class="text-red-800">{{ message }}</div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" class="bg-white shadow-lg rounded-lg p-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Función f(t,y) -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.function.label }}
+                    </label>
+                    {{ form.function }}
+                    {% if form.function.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.function.help_text }}</p>
+                    {% endif %}
+                    {% if form.function.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.function.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Condiciones iniciales -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.t0.label }}
+                    </label>
+                    {{ form.t0 }}
+                    {% if form.t0.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.t0.help_text }}</p>
+                    {% endif %}
+                    {% if form.t0.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.t0.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.y0.label }}
+                    </label>
+                    {{ form.y0 }}
+                    {% if form.y0.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.y0.help_text }}</p>
+                    {% endif %}
+                    {% if form.y0.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.y0.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Parámetros numéricos -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.h.label }}
+                    </label>
+                    {{ form.h }}
+                    {% if form.h.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.h.help_text }}</p>
+                    {% endif %}
+                    {% if form.h.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.h.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.n_steps.label }}
+                    </label>
+                    {{ form.n_steps }}
+                    {% if form.n_steps.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.n_steps.help_text }}</p>
+                    {% endif %}
+                    {% if form.n_steps.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.n_steps.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Método -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        {{ form.method.label }}
+                    </label>
+                    <div class="space-y-3">
+                        {% for choice in form.method %}
+                            <div class="flex items-start">
+                                {{ choice.tag }}
+                                <div class="ml-3">
+                                    <label for="{{ choice.id_for_label }}" class="text-sm font-medium text-gray-700">
+                                        {{ choice.choice_label }}
+                                    </label>
+                                    {% if choice.choice_value == 'euler' %}
+                                        <p class="text-xs text-gray-500">Error O(h), simple y directo</p>
+                                    {% else %}
+                                        <p class="text-xs text-gray-500">Error O(h⁴), más preciso</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-between">
+                <a href="{% url 'index' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                    Volver al menú
+                </a>
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded">
+                    Resolver EDO →
+                </button>
+            </div>
+        </form>
+
+        <!-- Examples -->
+        <div class="mt-8 bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <h3 class="text-sm font-medium text-purple-800 mb-2">Ejemplos de EDOs:</h3>
+            <ul class="text-sm text-purple-700 space-y-1">
+                <li><code>y</code> - dy/dt = y (crecimiento exponencial)</li>
+                <li><code>-2*y + t</code> - EDO lineal con término forzante</li>
+                <li><code>y - t**2 + 1</code> - EDO con término cuadrático</li>
+                <li><code>t*y + 1</code> - EDO variable separable</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %} 

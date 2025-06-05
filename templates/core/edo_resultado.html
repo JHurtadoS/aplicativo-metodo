@@ -1,0 +1,682 @@
+{% extends 'base.html' %}
+
+{% block title %}Resultado - EDOs{% endblock %}
+
+{% block extra_head %}
+<!-- KaTeX -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+
+<style>
+    /* KaTeX styling improvements */
+    .katex-display {
+        margin: 0.8em 0;
+        text-align: center;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.5em;
+        background: rgba(59, 130, 246, 0.05);
+        border-radius: 0.5rem;
+        border: 1px solid rgba(59, 130, 246, 0.1);
+    }
+    
+    .katex {
+        font-size: 1.1em !important;
+        color: #1f2937;
+        font-family: 'KaTeX_Main', 'Times New Roman', serif;
+    }
+    
+    .katex-display .katex {
+        font-size: 1.4em !important;
+    }
+    
+    /* Inline math styling */
+    .katex-inline {
+        background: rgba(99, 102, 241, 0.08);
+        padding: 0.1em 0.4em;
+        border-radius: 0.25rem;
+        font-weight: 500;
+        display: inline-block;
+        margin: 0 0.1em;
+    }
+    
+    /* Step calculations styling */
+    .step-item .katex {
+        font-size: 1em !important;
+    }
+    
+    /* Fraction styling improvements */
+    .katex .mfrac {
+        margin: 0.2em 0;
+    }
+    
+    .katex .frac-line {
+        border-bottom-width: 0.08em;
+    }
+    
+    /* Matrix styling */
+    .katex .mord.mtable {
+        margin: 0.3em 0;
+    }
+    
+    /* Binary operators spacing */
+    .katex .mbin {
+        margin: 0 0.3em;
+    }
+    
+    .katex .mrel {
+        margin: 0 0.4em;
+    }
+    
+    /* Improved subscript/superscript positioning */
+    .calculation-formula .katex-html .msubsup {
+        vertical-align: baseline;
+    }
+    
+    .katex .mord.mathnormal {
+        font-style: italic;
+        font-weight: normal;
+    }
+    
+    .katex .msupsub {
+        line-height: 1;
+    }
+    
+    /* Special styling for display math */
+    .katex-display > .katex > .katex-html {
+        display: inline-block;
+        white-space: nowrap;
+    }
+    
+    /* Error handling */
+    .katex-error {
+        color: #dc2626 !important;
+        background: rgba(220, 38, 38, 0.1);
+        padding: 0.2em 0.4em;
+        border-radius: 0.25rem;
+        font-family: monospace;
+        border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+    
+    /* Custom colors for different mathematical elements */
+    .katex .mord.mathnormal.L {
+        color: #059669;
+    }
+    
+    .katex .mord.mathnormal.U {
+        color: #dc2626;
+    }
+    
+    .katex .mord.mathnormal.A {
+        color: #3b82f6;
+    }
+    
+    /* Better rendering for equations */
+    .katex .mopen, .katex .mclose {
+        color: #374151;
+    }
+    
+    .katex .mord {
+        color: #1f2937;
+    }
+    
+    .katex .mop {
+        color: #4338ca;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .katex-display {
+            font-size: 0.9em;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 0.3em;
+        }
+        
+        .katex {
+            font-size: 0.95em !important;
+        }
+        
+        .katex-display .katex {
+            font-size: 1.1em !important;
+        }
+    }
+    
+    /* Loading animation while KaTeX renders */
+    .math-loading {
+        background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 0.25rem;
+        height: 1.2em;
+        display: inline-block;
+        width: 100px;
+    }
+    
+    @keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Esperar a que todos los recursos se carguen
+        function initializeKaTeX() {
+            if (typeof renderMathInElement === 'undefined' || typeof katex === 'undefined') {
+                console.log("Waiting for KaTeX to load...");
+                setTimeout(initializeKaTeX, 100);
+                return;
+            }
+            
+            console.log("KaTeX loaded successfully, initializing...");
+            
+            // Configuración mejorada de KaTeX
+            const katexOptions = {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false,
+                errorColor: '#dc2626',
+                strict: false,
+                trust: false,
+                fleqn: false,
+                leqno: false,
+                macros: {
+                    "\\f": "f",
+                    "\\y": "y", 
+                    "\\t": "t",
+                    "\\h": "h",
+                    "\\n": "n",
+                    "\\RR": "\\mathbb{R}",
+                    "\\NN": "\\mathbb{N}",
+                    "\\ZZ": "\\mathbb{Z}",
+                    "\\diff": "\\mathrm{d}",
+                    "\\euler": "\\text{Euler}",
+                    "\\rk": "\\text{RK4}"
+                }
+            };
+            
+            try {
+                // Renderizar matemáticas en todo el documento
+                renderMathInElement(document.body, katexOptions);
+                console.log("KaTeX initial rendering completed");
+                
+                // Añadir clases personalizadas después del renderizado
+                setTimeout(() => {
+                    // Aplicar estilos a matemáticas inline
+                    document.querySelectorAll('.katex:not(.katex-display .katex)').forEach(el => {
+                        if (!el.closest('.katex-display')) {
+                            el.closest('.katex-html') && el.closest('.katex-html').parentElement.classList.add('katex-inline');
+                        }
+                    });
+                    
+                    // Mejorar display de ecuaciones
+                    document.querySelectorAll('.katex-display').forEach(el => {
+                        el.style.margin = '1em 0';
+                        el.style.padding = '0.5em';
+                    });
+                    
+                    console.log("KaTeX styling enhancements applied");
+                }, 200);
+                
+            } catch (error) {
+                console.error("KaTeX rendering error:", error);
+            }
+        }
+        
+        // Inicializar KaTeX
+        initializeKaTeX();
+        
+        // Re-renderizar cuando se añade contenido dinámico
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length > 0) {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1 && typeof renderMathInElement !== 'undefined') {
+                            try {
+                                renderMathInElement(node, katexOptions);
+                            } catch (error) {
+                                console.error("KaTeX dynamic rendering error:", error);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Función global para re-renderizar manualmente si es necesario
+        window.reRenderKaTeX = function() {
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(document.body, katexOptions);
+                console.log("Manual KaTeX re-render completed");
+            }
+        };
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">EDO - Resultados</h1>
+            <p class="text-gray-600">Método: {{ result.metodo|title }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- COLUMNA 1: RESULTADO PRINCIPAL Y ANÁLISIS -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Resultado Final Expandido -->
+                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold text-purple-800 mb-4">📊 Resultado Final</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-purple-600 mb-2">
+                                y({{ result.detalles.final_time|floatformat:3 }}) ≈ {{ result.valor|floatformat:6 }}
+                            </div>
+                            <div class="text-sm text-gray-600 mb-1">
+                                EDO: dy/dt = {{ result.detalles.expression }}
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                Condición inicial: y({{ result.entrada.t0 }}) = {{ result.entrada.y0 }}
+                            </div>
+                        </div>
+                        
+                        <!-- Métricas del Resultado -->
+                        <div class="bg-white rounded-lg p-4 shadow-sm">
+                            <h3 class="font-semibold text-gray-700 mb-3">📈 Análisis de la Solución</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Valor inicial:</span>
+                                    <span class="font-mono">{{ result.analisis.valor_inicial|floatformat:6 }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Valor final:</span>
+                                    <span class="font-mono">{{ result.analisis.valor_final|floatformat:6 }}</span>
+                                </div>
+                                <div class="flex justify-between border-t pt-2">
+                                    <span class="text-gray-600">Cambio absoluto:</span>
+                                    <span class="font-mono {% if result.analisis.cambio_absoluto >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                        {{ result.analisis.cambio_absoluto|floatformat:6 }}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Cambio relativo:</span>
+                                    <span class="font-mono">{{ result.analisis.cambio_relativo|floatformat:2 }}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Incremento promedio:</span>
+                                    <span class="font-mono">{{ result.analisis.incremento_promedio|floatformat:6 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Información del Proceso -->
+                    <div class="mt-4 pt-4 border-t border-purple-200">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm">
+                            <div>
+                                <div class="font-semibold text-gray-700">Pasos calculados</div>
+                                <div class="text-lg font-bold text-indigo-600">{{ result.entrada.n_steps }}</div>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-700">Tamaño de paso</div>
+                                <div class="text-lg font-bold text-indigo-600">{{ result.entrada.h|floatformat:4 }}</div>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-700">Rango temporal</div>
+                                <div class="text-lg font-bold text-indigo-600">{{ result.analisis.rango_temporal|floatformat:3 }}</div>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-700">Precisión estimada</div>
+                                <div class="text-lg font-bold text-indigo-600">{{ result.analisis.precision_estimada }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">📊 Resumen</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center p-3 bg-blue-50 rounded-lg">
+                            <div class="text-sm text-gray-600">Valor Mínimo</div>
+                            <div class="text-lg font-bold text-blue-600">{{ result.analisis.min_valor|floatformat:6 }}</div>
+                            <div class="text-xs text-gray-500">en t = {{ result.analisis.min_tiempo|floatformat:4 }}</div>
+                        </div>
+                        <div class="text-center p-3 bg-green-50 rounded-lg">
+                            <div class="text-sm text-gray-600">Valor Máximo</div>
+                            <div class="text-lg font-bold text-green-600">{{ result.analisis.max_valor|floatformat:6 }}</div>
+                            <div class="text-xs text-gray-500">en t = {{ result.analisis.max_tiempo|floatformat:4 }}</div>
+                        </div>
+                        <div class="text-center p-3 bg-purple-50 rounded-lg">
+                            <div class="text-sm text-gray-600">Valor Promedio</div>
+                            <div class="text-lg font-bold text-purple-600">{{ result.analisis.promedio|floatformat:6 }}</div>
+                            <div class="text-xs text-gray-500">en el intervalo</div>
+                        </div>
+                        <div class="text-center p-3 bg-orange-50 rounded-lg">
+                            <div class="text-sm text-gray-600">Desviación</div>
+                            <div class="text-lg font-bold text-orange-600">{{ result.analisis.desviacion|floatformat:6 }}</div>
+                            <div class="text-xs text-gray-500">estándar</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nueva Sección: Explicación de Cálculos Detallada -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">🔍 Cálculos Detallados</h2>
+                    <div class="space-y-6">
+                        
+                        <!-- Valor Final -->
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-blue-700 mb-3">📐 Valor Final</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="bg-white p-3 rounded border-l-4 border-blue-500">
+                                    <p class="text-gray-700 mb-2">El valor final se obtiene aplicando el método {{ result.metodo|upper }} iterativamente:</p>
+                                    {% if result.metodo == 'euler' %}
+                                        <div class="font-mono text-blue-800 mb-2">$y_{n+1} = y_n + h \cdot f(t_n, y_n)$</div>
+                                        <div class="text-gray-600 mb-2">donde $h = {{ result.entrada.h }}$ y $f(t,y) = {{ result.detalles.expression }}$</div>
+                                        <div class="bg-gray-50 p-2 rounded text-xs space-y-1">
+                                            <div><strong>Ejemplo del primer paso:</strong></div>
+                                            <div>$y_1 = y_0 + h \cdot f(t_0, y_0) = {{ result.entrada.y0 }} + {{ result.entrada.h }} \cdot f({{ result.entrada.t0 }}, {{ result.entrada.y0 }})$</div>
+                                            {% if result.pasos|length > 0 %}
+                                            <div>$y_1 = {{ result.entrada.y0 }} + {{ result.entrada.h }} \cdot {{ result.pasos.0.f_tn_yn|floatformat:4 }} = {{ result.pasos.0.yn|floatformat:6 }}$</div>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div class="font-mono text-blue-800 mb-2">$y_{n+1} = y_n + \frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4)$</div>
+                                        <div class="text-gray-600 mb-2">donde:</div>
+                                        <div class="bg-gray-50 p-2 rounded text-xs space-y-1 font-mono">
+                                            <div>$k_1 = f(t_n, y_n)$</div>
+                                            <div>$k_2 = f(t_n + h/2, y_n + hk_1/2)$</div>
+                                            <div>$k_3 = f(t_n + h/2, y_n + hk_2/2)$</div>
+                                            <div>$k_4 = f(t_n + h, y_n + hk_3)$</div>
+                                        </div>
+                                    {% endif %}
+                                    <p class="text-gray-600 mt-3">Después de {{ result.entrada.n_steps }} iteraciones:</p>
+                                    <div class="font-mono text-lg text-blue-600 mt-2">$y({{ result.detalles.final_time|floatformat:3 }}) = {{ result.valor|floatformat:6 }}$</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Incremento Promedio -->
+                        <div class="bg-purple-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-purple-700 mb-3">📈 Incremento Promedio</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="bg-white p-3 rounded border-l-4 border-purple-500">
+                                    <p class="text-gray-700 mb-2">Mide el cambio promedio de $y$ por cada paso temporal:</p>
+                                    <div class="font-mono text-purple-800 mb-2">$\text{Incremento promedio} = \frac{y_{\text{final}} - y_{\text{inicial}}}{n}$</div>
+                                    <div class="space-y-1">
+                                        <div class="font-mono text-gray-600">$= \frac{ {{ result.analisis.valor_final|floatformat:6 }} - {{ result.analisis.valor_inicial }} }{ {{ result.analisis.incremento_formula_den }} }$</div>
+                                        <div class="font-mono text-gray-600">$= \frac{ {{ result.analisis.incremento_formula_num }} }{ {{ result.analisis.incremento_formula_den }} }$</div>
+                                        <div class="font-mono text-lg text-purple-600">$= {{ result.analisis.incremento_promedio|floatformat:6 }}$ por paso</div>
+                                    </div>
+                                    <div class="mt-2 text-xs bg-gray-50 p-2 rounded">
+                                        <strong>Verificación:</strong> Suma de todos los Δy = {% for paso in result.pasos %}{{ paso.delta_y|floatformat:6 }}{% if not forloop.last %} + {% endif %}{% endfor %} = {{ result.analisis.cambio_absoluto|floatformat:6 }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desviación Estándar -->
+                        <div class="bg-orange-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-orange-700 mb-3">📊 Desviación Estándar</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="bg-white p-3 rounded border-l-4 border-orange-500">
+                                    <p class="text-gray-700 mb-2">Mide la variabilidad de los valores $y(t)$ alrededor del promedio:</p>
+                                    <div class="font-mono text-orange-800 mb-2">$\sigma = \sqrt{\frac{1}{N-1} \sum_{i=1}^{N} (y_i - \bar{y})^2}$</div>
+                                    <div class="space-y-1">
+                                        <div class="text-gray-600">donde $\bar{y} = {{ result.analisis.promedio|floatformat:6 }}$ (valor promedio)</div>
+                                        <div class="text-gray-600">y $N = {{ result.analisis.total_puntos }}$ (total de puntos)</div>
+                                        <div class="font-mono text-lg text-orange-600 mt-2">$\sigma = {{ result.analisis.desviacion|floatformat:6 }}$</div>
+                                    </div>
+                                    <div class="mt-2 text-xs text-gray-500">
+                                        {% if result.analisis.desviacion < 0.1 %}
+                                        ⬇️ Baja variabilidad - Solución estable
+                                        {% elif result.analisis.desviacion < 0.5 %}
+                                        ➡️ Variabilidad moderada - Comportamiento predecible
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Nueva sección: Verificación de Cálculos -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-gray-700 mb-3">🔢 Verificación de Cálculos</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="bg-white p-3 rounded border-l-4 border-gray-500">
+                                    <p class="text-gray-700 mb-2">Comprobación de consistencia:</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                        <div>
+                                            <strong>Valores calculados:</strong>
+                                            <ul class="mt-1 space-y-1">
+                                                <li>• Punto inicial: y({{ result.entrada.t0 }}) = {{ result.entrada.y0 }}</li>
+                                                <li>• Punto final: y({{ result.detalles.final_time|floatformat:3 }}) = {{ result.valor|floatformat:6 }}</li>
+                                                <li>• Pasos realizados: {{ result.entrada.n_steps }}</li>
+                                                <li>• Tamaño de paso: h = {{ result.entrada.h }}</li>
+                                            </ul>
+                                        </div>
+                                        <div>
+                                            <strong>Verificaciones:</strong>
+                                            <ul class="mt-1 space-y-1">
+                                                <li>• Tiempo total: {{ result.entrada.n_steps }} × {{ result.entrada.h }} = {{ result.analisis.rango_temporal|floatformat:3 }}</li>
+                                                <li>• Cambio total: {{ result.analisis.cambio_absoluto|floatformat:6 }}</li>
+                                                <li>• Cambio por paso: {{ result.analisis.incremento_promedio|floatformat:6 }}</li>
+                                                <li>• Método: {{ result.metodo|upper }}</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla de Resultados -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">📋 Tabla de Resultados Detallada</h2>
+                    <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paso</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">De t</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">y inicial</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">A t</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">y final</th>
+                                    {% if result.metodo == 'rk4' %}
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">k₁</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">k₄</th>
+                                    {% else %}
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">f(t,y)</th>
+                                    {% endif %}
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Δy</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <!-- Fila inicial -->
+                                <tr class="bg-green-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Inicial</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">-</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">-</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ result.entrada.t0|floatformat:4 }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ result.entrada.y0|floatformat:6 }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">-</td>
+                                    {% if result.metodo == 'rk4' %}<td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">-</td>{% endif %}
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">-</td>
+                                </tr>
+                                
+                                <!-- Pasos calculados -->
+                                {% for paso in result.pasos %}
+                                <tr class="{% if forloop.last %}bg-blue-50{% endif %}">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{ paso.step }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ paso.t_inicial|floatformat:4 }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ paso.y_inicial|floatformat:6 }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">{{ paso.tn|floatformat:4 }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">{{ paso.yn|floatformat:6 }}</td>
+                                    {% if result.metodo == 'rk4' %}
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ paso.k1|floatformat:4 }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ paso.k4|floatformat:4 }}</td>
+                                    {% else %}
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{{ paso.f_tn_yn|floatformat:4 }}</td>
+                                    {% endif %}
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm {% if paso.delta_y >= 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold">
+                                        {% if paso.delta_y >= 0 %}+{% endif %}{{ paso.delta_y|floatformat:6 }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Datos clave de la tabla -->
+                    <div class="mt-4 pt-4 border-t grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-gray-600">
+                        <div>
+                            <span class="font-semibold">Total de pasos:</span> {{ result.entrada.n_steps }}
+                        </div>
+                        <div>
+                            <span class="font-semibold">Intervalo tiempo:</span> [{{ result.entrada.t0 }}, {{ result.detalles.final_time|floatformat:3 }}]
+                        </div>
+                        <div>
+                            <span class="font-semibold">Rango valores:</span> [{{ result.analisis.min_valor|floatformat:3 }}, {{ result.analisis.max_valor|floatformat:3 }}]
+                        </div>
+                        <div>
+                            <span class="font-semibold">Cambio total:</span> {% if result.analisis.cambio_absoluto >= 0 %}+{% endif %}{{ result.analisis.cambio_absoluto|floatformat:6 }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNA 2: GRÁFICO Y INFORMACIÓN TÉCNICA -->
+            <div class="space-y-6">
+                <!-- Gráfico más grande -->
+                {% if result.grafico_path %}
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">📈 Solución Gráfica</h2>
+                    <div class="w-full">
+                        <img src="/static/{{ result.grafico_path }}" alt="Gráfico de EDO" class="w-full h-auto mx-auto rounded border" style="min-height: 400px;">
+                    </div>
+                    
+                    <!-- Detalles del gráfico -->
+                    <div class="mt-3 text-xs text-gray-600 space-y-1">
+                        <div class="flex justify-between">
+                            <span>Dominio:</span>
+                            <span>[{{ result.entrada.t0 }}, {{ result.detalles.final_time|floatformat:3 }}]</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Rango:</span>
+                            <span>[{{ result.analisis.min_valor|floatformat:3 }}, {{ result.analisis.max_valor|floatformat:3 }}]</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Puntos graficados:</span>
+                            <span>{{ result.analisis.total_puntos }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Comportamiento:</span>
+                            <span class="{% if result.analisis.tendencia == 'Creciente' %}text-green-600{% elif result.analisis.tendencia == 'Decreciente' %}text-red-600{% else %}text-blue-600{% endif %}">
+                                {{ result.analisis.tendencia }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Información del Método (Simplificada) -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">⚙️ Método Utilizado</h2>
+                    {% if result.metodo == 'euler' %}
+                    <div class="space-y-3">
+                        <div class="bg-blue-50 p-3 rounded-lg">
+                            <p class="font-semibold text-blue-800">Método de Euler</p>
+                            <p class="text-sm text-blue-600">Método explícito de primer orden</p>
+                        </div>
+                        <div class="text-sm space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Error local:</span>
+                                <span class="font-mono">O(h²)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Error global:</span>
+                                <span class="font-mono">O(h)</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="space-y-3">
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <p class="font-semibold text-green-800">Runge-Kutta 4° orden</p>
+                            <p class="text-sm text-green-600">Método explícito de cuarto orden</p>
+                        </div>
+                        <div class="text-sm space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Error local:</span>
+                                <span class="font-mono">O(h⁵)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Error global:</span>
+                                <span class="font-mono">O(h⁴)</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Datos de Entrada (Resumen) -->
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="font-semibold text-gray-700 mb-3">📝 Datos de Entrada</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">EDO:</span>
+                            <span class="font-mono text-xs">dy/dt = {{ result.detalles.expression }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Condiciones:</span>
+                            <span class="font-mono">y({{ result.entrada.t0 }}) = {{ result.entrada.y0 }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Paso:</span>
+                            <span class="font-mono">h = {{ result.entrada.h }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Iteraciones:</span>
+                            <span class="font-mono">{{ result.entrada.n_steps }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="mt-8 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex gap-4">
+                <a href="{% url 'edo_form' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                    ← Nueva EDO
+                </a>
+                <a href="{% url 'index' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+                    Menú Principal
+                </a>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="window.print()" class="bg-green-600 hover:bg-green-700 text-white text-sm py-2 px-3 rounded">
+                    🖨️ Imprimir
+                </button>
+                <a href="#" class="bg-red-600 hover:bg-red-700 text-white text-sm py-2 px-3 rounded">
+                    📄 Descargar PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
